@@ -193,6 +193,13 @@ join_status_t lorawan_api_isjoined( uint8_t stack_id );
 void lorawan_api_join_status_clear( uint8_t stack_id );
 
 /**
+ * @brief Restore join session if active, otherwise reset the join status to NOT_JOINED
+ * 
+ * @param[in] stack_id 
+ */
+void lorawan_api_join_session_restore( uint8_t stack_id );
+
+/**
  * @brief Set datarate strategy
  * @remark The current implementation support 4 different dataRate Strategy :
  *    STATIC_ADR_MODE                   for static Devices with ADR managed by the Network

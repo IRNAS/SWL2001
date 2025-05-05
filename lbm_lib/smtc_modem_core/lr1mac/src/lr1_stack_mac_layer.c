@@ -181,12 +181,23 @@ void lr1_stack_mac_region_init( lr1_stack_mac_t* lr1_mac, smtc_real_region_types
 void lr1_stack_mac_region_config( lr1_stack_mac_t* lr1_mac )
 {
     smtc_real_config( lr1_mac->real );
-    lr1_mac->rx2_frequency    = real_const.const_rx2_freq;
     lr1_mac->tx_power         = real_const.const_tx_power_dbm;
     lr1_mac->max_erp_dbm      = real_const.const_tx_power_dbm;
+#if defined( STORE_JOIN_SESSION )
+    // If we are keeping join session, use the stored values
+    if(lr1_mac->join_status != JOINED)
+    {	
+	lr1_mac->rx2_frequency    = real_const.const_rx2_freq;
+	lr1_mac->rx1_dr_offset    = 0;
+	lr1_mac->rx2_data_rate    = real_const.const_rx2_dr_init;
+	lr1_mac->rx1_delay_s      = real_const.const_received_delay1;
+    }
+#else 
+    lr1_mac->rx2_frequency    = real_const.const_rx2_freq;
     lr1_mac->rx1_dr_offset    = 0;
     lr1_mac->rx2_data_rate    = real_const.const_rx2_dr_init;
     lr1_mac->rx1_delay_s      = real_const.const_received_delay1;
+#endif
     lr1_mac->tx_data_rate_adr = real_const.const_min_tx_dr_limit;
 
     // If 0 the beacon of the region is used, else this freq is used even if the beacon must be hopping
