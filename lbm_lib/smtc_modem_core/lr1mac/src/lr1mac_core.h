@@ -92,6 +92,13 @@ status_lorawan_t lr1mac_core_join( lr1_stack_mac_t* lr1_mac_obj, uint32_t target
 void lr1mac_core_join_status_clear( lr1_stack_mac_t* lr1_mac_obj );
 
 /**
+ * @brief Keep join session if joined, otherwise reset the join status to NotJoined
+ * 
+ * @param[in] lr1_mac_obj 
+ */
+void lr1mac_core_join_session_restore( lr1_stack_mac_t* lr1_mac_obj );
+
+/**
  * @brief abort LoRaWAN task
  * @remark Tx, Rx will be aborted
  *

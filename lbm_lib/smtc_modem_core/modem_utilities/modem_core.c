@@ -161,7 +161,13 @@ void modem_context_init_light( void ( *callback )( void ), radio_planner_t* rp )
         lorawan_api_init( rp, stack_id, ( void ( * )( lr1_stack_mac_down_data_t* ) ) modem_downlink_callback );
 
         lorawan_api_dr_strategy_set( STATIC_ADR_MODE, stack_id );
-        lorawan_api_join_status_clear( stack_id );
+	
+#if defined ( STORE_JOIN_SESSION )
+	SMTC_MODEM_HAL_TRACE_PRINTF( "Trying to restore join session.\n" );
+	lorawan_api_join_session_restore( stack_id );
+#else
+	lorawan_api_join_status_clear( stack_id );
+#endif
 
         // to init duty cycle
         smtc_real_region_types_t region = lorawan_api_get_region( stack_id );

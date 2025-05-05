@@ -766,6 +766,29 @@ smtc_modem_return_code_t smtc_modem_get_chip_eui( uint8_t stack_id, uint8_t chip
  */
 smtc_modem_return_code_t smtc_modem_derive_keys( uint8_t stack_id );
 
+/**
+ * @brief Restore security context.
+ *
+ * If stored, the security context can be restored. User should call this function
+ * in the reset callback.
+ * If certification is enabled, the security context is automatically restored.
+ *
+ * @param[in] stack_id
+ * @return smtc_modem_return_code_t
+ */
+smtc_modem_return_code_t smtc_modem_secure_element_restore_context(uint8_t stack_id);
+
+/**
+ * @brief Store security context.
+ *
+ * Store the security context. User should call this function after a successful join.
+ * If certification is enabled, the security context is automatically stored.
+ *
+ * @param[in] stack_id
+ * @return smtc_modem_return_code_t
+ */
+smtc_modem_return_code_t smtc_modem_secure_element_store_context(uint8_t stack_id);
+
 #if defined( USE_LR11XX_CE )
 /**
  * @brief Get Fragmented DataBlockIntKey
@@ -797,6 +820,7 @@ smtc_modem_return_code_t smtc_modem_get_data_block_int_key( uint8_t stack_id,
  */
 smtc_modem_return_code_t smtc_modem_derive_and_set_data_block_int_key(
     uint8_t stack_id, const uint8_t gen_appkey[SMTC_MODEM_KEY_LENGTH] );
+
 #endif  // USE_LR11XX_CE
 /*
  * -----------------------------------------------------------------------------
