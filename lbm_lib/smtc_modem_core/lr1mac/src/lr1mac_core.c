@@ -551,6 +551,24 @@ void lr1mac_core_join_status_clear( lr1_stack_mac_t* lr1_mac_obj )
     lr1_mac_obj->adr_mode_select = lr1_mac_obj->adr_mode_select_tmp;
 }
 
+void lr1mac_core_join_session_restore( lr1_stack_mac_t* lr1_mac_obj )
+{
+    // If joined, keep the session and init context
+    if(lr1_mac_obj->join_status == JOINED)
+    {
+	lr1mac_core_abort( lr1_mac_obj );
+	smtc_real_init_join_snapshot_channel_mask( lr1_mac_obj->real );
+	lr1_mac_obj->retry_join_cpt = 0;
+
+	// Revert ADR modem in case the leave network command is called before join success
+	lr1_mac_obj->adr_mode_select = lr1_mac_obj->adr_mode_select_tmp;
+	smtc_real_update_cflist( lr1_mac_obj->real, lr1_mac_obj->cf_list );
+    }
+    else {
+	lr1mac_core_join_status_clear( lr1_mac_obj );
+    }
+}
+
 /**************************************************/
 /*         LoraWan  SendPayload  Method           */
 /**************************************************/
@@ -796,15 +814,37 @@ void lr1mac_core_context_save( lr1_stack_mac_t* lr1_mac_obj )
     if( ( ctx.devnonce != lr1_mac_obj->dev_nonce ) ||
         ( memcmp( ctx.join_nonce, lr1_mac_obj->join_nonce, sizeof( ctx.join_nonce ) ) != 0 ) ||
         ( ctx.certification_enabled != lr1_mac_obj->is_lorawan_modem_certification_enabled ) ||
-        ( ctx.region != lr1_mac_obj->real->region_type ) )
+        ( ctx.region != lr1_mac_obj->real->region_type ) 
+#if defined( STORE_JOIN_SESSION )
+	|| ( memcmp( ctx.cf_list, lr1_mac_obj->cf_list, sizeof( ctx.cf_list ) ) != 0 ) ||
+	(ctx.fcnt_up != lr1_mac_obj->fcnt_up) ||
+	(ctx.fcnt_dwn != lr1_mac_obj->fcnt_dwn) ||
+	(ctx.dev_addr != lr1_mac_obj->dev_addr) || 
+	( ctx.rx2_data_rate != lr1_mac_obj->rx2_data_rate ) ||
+	( ctx.rx2_frequency != lr1_mac_obj->rx2_frequency ) ||
+	( ctx.rx1_dr_offset != lr1_mac_obj->rx1_dr_offset ) ||
+	( ctx.rx1_delay_s != lr1_mac_obj->rx1_delay_s ) || 
+	( ctx.join_status != lr1_mac_obj->join_status )
+#endif
+	)
     {
         ctx.ctx_version = LORAWAN_NVM_CTX_VERSION;
         ctx.devnonce    = lr1_mac_obj->dev_nonce;
         memcpy( ctx.join_nonce, lr1_mac_obj->join_nonce, sizeof( ctx.join_nonce ) );
         ctx.certification_enabled = lr1_mac_obj->is_lorawan_modem_certification_enabled;
         ctx.region                = lr1_mac_obj->real->region_type;
-        ctx.crc                   = lr1mac_utilities_crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) );
-
+#if defined( STORE_JOIN_SESSION )
+	memcpy( ctx.cf_list, lr1_mac_obj->cf_list, sizeof( ctx.cf_list ) );
+	ctx.fcnt_up	      	  = lr1_mac_obj->fcnt_up;
+	ctx.fcnt_dwn	      	  = lr1_mac_obj->fcnt_dwn;
+	ctx.dev_addr	      	  = lr1_mac_obj->dev_addr;
+        ctx.rx2_data_rate	  = lr1_mac_obj->rx2_data_rate;
+	ctx.rx2_frequency	  = lr1_mac_obj->rx2_frequency;
+	ctx.rx1_dr_offset	  = lr1_mac_obj->rx1_dr_offset;
+	ctx.rx1_delay_s	  	  = lr1_mac_obj->rx1_delay_s;
+	ctx.join_status	  	  = lr1_mac_obj->join_status;
+	ctx.crc                   = lr1mac_utilities_crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) );
+#endif	
         smtc_modem_hal_context_store( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * sizeof( ctx ), ( uint8_t* ) &ctx,
                                       sizeof( ctx ) );
 
@@ -827,7 +867,17 @@ status_lorawan_t lr1mac_core_context_load( lr1_stack_mac_t* lr1_mac_obj )
         memcpy( lr1_mac_obj->join_nonce, ctx.join_nonce, sizeof( lr1_mac_obj->join_nonce ) );
         lr1_mac_obj->is_lorawan_modem_certification_enabled = ctx.certification_enabled;
         lr1_mac_obj->real->region_type                      = ctx.region;
-
+#if defined( STORE_JOIN_SESSION )
+	memcpy( lr1_mac_obj->cf_list, ctx.cf_list, sizeof( lr1_mac_obj->cf_list ) );
+	lr1_mac_obj->fcnt_up 				    = ctx.fcnt_up;
+	lr1_mac_obj->fcnt_dwn 				    = ctx.fcnt_dwn;
+	lr1_mac_obj->dev_addr 				    = ctx.dev_addr;
+	lr1_mac_obj->rx2_data_rate 			    = ctx.rx2_data_rate;
+	lr1_mac_obj->rx2_frequency 			    = ctx.rx2_frequency;
+	lr1_mac_obj->rx1_dr_offset 			    = ctx.rx1_dr_offset;
+	lr1_mac_obj->rx1_delay_s 			    = ctx.rx1_delay_s;
+	lr1_mac_obj->join_status 			    = ctx.join_status;
+#endif
         return OKLORAWAN;
     }
     else
@@ -1339,6 +1389,10 @@ static void lr1mac_mac_update( lr1_stack_mac_t* lr1_mac_obj )
         lr1_mac_obj->lr1mac_state = LWPSTATE_IDLE;
     }
     lr1_mac_obj->valid_rx_packet = NO_MORE_VALID_RX_PACKET;
+
+#if defined( STORE_JOIN_SESSION )
+	lr1mac_core_context_save(lr1_mac_obj);
+#endif
 }
 
 /* --- EOF ------------------------------------------------------------------ */

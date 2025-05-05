@@ -489,12 +489,22 @@ typedef struct lr1mac_rx_session_param_s
 
 typedef struct lr1_mac_nvm_context_s
 {
-    uint8_t  ctx_version;
-    uint16_t devnonce;
-    uint8_t  join_nonce[6];
-    uint8_t  certification_enabled;
-    uint8_t  region;
-    uint8_t  rfu[17];  // bytes reserved for future used
+    uint8_t       ctx_version;
+    uint16_t      devnonce;
+    uint8_t       join_nonce[6];
+    uint8_t       certification_enabled;
+    uint8_t       region;
+#if defined( STORE_JOIN_SESSION )
+    uint8_t       cf_list[16];
+    uint32_t      fcnt_up;
+    uint32_t      fcnt_dwn;
+    uint32_t      dev_addr;
+    uint8_t       rx2_data_rate;
+    uint32_t      rx2_frequency;
+    uint8_t       rx1_dr_offset;
+    uint8_t       rx1_delay_s;
+    join_status_t join_status;
+#endif
     uint32_t crc;      // !! crc MUST be the last field of the structure !!
 } lr1_mac_nvm_context_t;
 

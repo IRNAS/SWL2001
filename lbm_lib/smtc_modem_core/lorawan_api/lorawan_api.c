@@ -231,6 +231,12 @@ void lorawan_api_join_status_clear( uint8_t stack_id )
     lr1mac_core_join_status_clear( &lr1_mac_obj[stack_id] );
 }
 
+void lorawan_api_join_session_restore( uint8_t stack_id )
+{
+    PANIC_IF_STACK_ID_TOO_HIGH( stack_id );
+    lr1mac_core_join_session_restore( &lr1_mac_obj[stack_id] );
+}
+
 status_lorawan_t lorawan_api_dr_strategy_set( dr_strategy_t dr_strategy, uint8_t stack_id )
 {
     PANIC_IF_STACK_ID_TOO_HIGH( stack_id );

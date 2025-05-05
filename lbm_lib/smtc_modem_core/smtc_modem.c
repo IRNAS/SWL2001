@@ -1275,6 +1275,30 @@ smtc_modem_return_code_t smtc_modem_derive_keys( uint8_t stack_id )
     }
     return SMTC_MODEM_RC_OK;
 }
+
+smtc_modem_return_code_t smtc_modem_secure_element_restore_context(uint8_t stack_id)
+{
+	smtc_modem_return_code_t return_code = SMTC_MODEM_RC_OK;
+
+	if( smtc_secure_element_restore_context(stack_id) != SMTC_SE_RC_SUCCESS )
+	{
+		return_code = SMTC_MODEM_RC_FAIL;
+	}
+
+	return return_code;
+}
+
+smtc_modem_return_code_t smtc_modem_secure_element_store_context(uint8_t stack_id)
+{
+	smtc_modem_return_code_t return_code = SMTC_MODEM_RC_OK;
+
+	if( smtc_secure_element_store_context(stack_id) != SMTC_SE_RC_SUCCESS )
+	{
+		return_code = SMTC_MODEM_RC_FAIL;
+	}
+
+	return return_code;
+}
 #endif  // USE_LR11XX_CE
 
 /*

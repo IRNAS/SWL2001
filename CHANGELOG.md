@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+* Support for storing session data and keeping the session after device reboot, dependant on STORE_JOIN_SESSION define.
+
 ## [v4.9.0] 2025-10-15
 
 This version is based on branch v4.8.0 of the LoRa Basics Modem.
