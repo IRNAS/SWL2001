@@ -1024,6 +1024,21 @@ smtc_modem_return_code_t smtc_modem_set_certification_mode( uint8_t stack_id, bo
     return SMTC_MODEM_RC_OK;
 }
 
+smtc_modem_return_code_t smtc_modem_set_nb_of_uplinks_before_reset( uint8_t stack_id, uint8_t nb_of_uplinks_before_reset )
+{
+	    RETURN_BUSY_IF_TEST_MODE( );
+
+    if( nb_of_uplinks_before_reset > 0 )
+    {
+	lorawan_api_set_no_rx_packet_threshold( nb_of_uplinks_before_reset , stack_id);
+    }
+    else
+    {
+	lorawan_api_set_no_rx_packet_threshold( 0 , stack_id);
+    }
+    return SMTC_MODEM_RC_OK;
+}
+
 smtc_modem_return_code_t smtc_modem_request_emergency_uplink( uint8_t stack_id, uint8_t fport, bool confirmed,
                                                               const uint8_t* payload, uint8_t payload_length )
 {
