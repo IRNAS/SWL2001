@@ -954,6 +954,19 @@ smtc_modem_return_code_t smtc_modem_get_certification_mode( uint8_t stack_id, bo
 smtc_modem_return_code_t smtc_modem_set_certification_mode( uint8_t stack_id, bool enable );
 
 /**
+ * @brief Set the number of uplinks before reset
+ *
+ * @param [in]  stack_id            Stack identifier
+ * @param [out] nb_of_uplinks       Number of uplinks before reset
+ *
+ * @return Modem return code as defined in @ref smtc_modem_return_code_t
+ * @retval SMTC_MODEM_RC_OK                Command executed without errors
+ * @retval SMTC_MODEM_RC_BUSY              Modem is currently in test mode
+ * @retval SMTC_MODEM_RC_INVALID_STACK_ID  Invalid \p stack_id
+ */
+smtc_modem_return_code_t smtc_modem_set_nb_of_uplinks_before_reset( uint8_t stack_id, uint8_t nb_of_uplinks_before_reset );
+
+/**
  * @brief Request an immediate LoRaWAN uplink
  *
  * @remark It has higher priority than all other services and is not subject to duty cycle restrictions, if any
