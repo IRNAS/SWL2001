@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 
 * Support for storing session data and keeping the session after device reboot, dependant on STORE_JOIN_SESSION define.
+* Add user access to the `lorawan_api_set_no_rx_packet_threshold` function.
 
 ## [v4.8.0] 2024-12-20
 
