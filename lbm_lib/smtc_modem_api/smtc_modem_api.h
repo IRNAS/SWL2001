@@ -245,6 +245,19 @@ typedef struct smtc_modem_dl_metadata_s
     uint8_t                datarate;
 } smtc_modem_dl_metadata_t;
 
+typedef enum smtc_modem_beacon_state_e
+{
+    SMTC_BEACON_UNLOCK,
+    SMTC_BEACON_LOCK,
+} smtc_modem_beacon_state_t;
+typedef struct smtc_modem_beacon_statistics_s
+{
+    smtc_modem_beacon_state_t beacon_state;        //!< the state of the beacon state machine
+    uint32_t nb_beacon_received;              //!< Number of beacons received
+    uint32_t nb_beacon_missed;                //!< Number of beacons missed
+    uint32_t last_beacon_received_timestamp;      //!< Last beacon received timestamp in ms
+} smtc_modem_beacon_statistics_t;
+
 /**
  * @brief Cipher mode for stream service
  */
@@ -1555,6 +1568,19 @@ smtc_modem_return_code_t smtc_modem_class_b_set_ping_slot_periodicity(
 smtc_modem_return_code_t smtc_modem_class_b_get_ping_slot_periodicity(
     uint8_t stack_id, smtc_modem_class_b_ping_slot_periodicity_t* ping_slot_periodicity );
 
+
+/**
+ * @brief Get last valid beacon timestamp
+ *
+ * @param[in] stack_id Stack identifier
+ * @param[out] beacon_statistics beacon statistics structure to be filled
+ * @return Modem return code as defined in @ref smtc_modem_return_code_t
+ * @retval SMTC_MODEM_RC_OK                 Command executed without errors
+ * @retval SMTC_MODEM_RC_BUSY               Modem is currently in test mode
+ * @retval SMTC_MODEM_RC_INVALID_STACK_ID   Invalid \p stack_id
+ */
+smtc_modem_return_code_t smtc_modem_class_b_beacon_get_statistics(smtc_modem_beacon_statistics_t *beacon_statistics,
+								  uint8_t stack_id );
 /**
  * @brief Configure a multicast group
  *

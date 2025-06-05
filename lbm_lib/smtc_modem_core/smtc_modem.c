@@ -1807,6 +1807,22 @@ smtc_modem_return_code_t smtc_modem_class_b_get_ping_slot_periodicity(
     return SMTC_MODEM_RC_OK;
 }
 
+smtc_modem_return_code_t smtc_modem_class_b_beacon_get_statistics(smtc_modem_beacon_statistics_t *beacon_statistics,
+								  uint8_t stack_id )
+{
+    RETURN_BUSY_IF_TEST_MODE( );
+
+    smtc_beacon_statistics_t statistics;
+    lorawan_api_beacon_get_statistics(&statistics, stack_id);
+
+    beacon_statistics->beacon_state = (smtc_modem_beacon_state_t) statistics.beacon_state;
+    beacon_statistics->nb_beacon_received = statistics.nb_beacon_received;
+    beacon_statistics->nb_beacon_missed = statistics.nb_beacon_missed;
+    beacon_statistics->last_beacon_received_timestamp = statistics.last_beacon_received_timestamp;
+
+    return SMTC_MODEM_RC_OK;
+}
+
 smtc_modem_return_code_t smtc_modem_multicast_set_grp_config( uint8_t stack_id, smtc_modem_mc_grp_id_t mc_grp_id,
                                                               uint32_t      mc_grp_addr,
                                                               const uint8_t mc_nwk_skey[SMTC_MODEM_KEY_LENGTH],
