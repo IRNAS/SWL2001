@@ -1576,6 +1576,7 @@ smtc_modem_return_code_t smtc_modem_class_b_get_ping_slot_periodicity(
  * @param[out] beacon_statistics beacon statistics structure to be filled
  * @return Modem return code as defined in @ref smtc_modem_return_code_t
  * @retval SMTC_MODEM_RC_OK                 Command executed without errors
+ * @retval SMTC_MODEM_RC_INVALID           Class B not supported
  * @retval SMTC_MODEM_RC_BUSY               Modem is currently in test mode
  * @retval SMTC_MODEM_RC_INVALID_STACK_ID   Invalid \p stack_id
  */

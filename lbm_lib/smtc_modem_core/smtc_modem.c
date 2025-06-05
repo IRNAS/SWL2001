@@ -1812,6 +1812,7 @@ smtc_modem_return_code_t smtc_modem_class_b_beacon_get_statistics(smtc_modem_bea
 {
     RETURN_BUSY_IF_TEST_MODE( );
 
+#if defined( ADD_CLASS_B )
     smtc_beacon_statistics_t statistics;
     lorawan_api_beacon_get_statistics(&statistics, stack_id);
 
@@ -1819,7 +1820,9 @@ smtc_modem_return_code_t smtc_modem_class_b_beacon_get_statistics(smtc_modem_bea
     beacon_statistics->nb_beacon_received = statistics.nb_beacon_received;
     beacon_statistics->nb_beacon_missed = statistics.nb_beacon_missed;
     beacon_statistics->last_beacon_received_timestamp = statistics.last_beacon_received_timestamp;
-
+#else
+	return SMTC_MODEM_RC_INVALID;
+#endif  // ADD_CLASS_B
     return SMTC_MODEM_RC_OK;
 }
 
