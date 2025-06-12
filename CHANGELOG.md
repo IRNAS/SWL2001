@@ -25,6 +25,10 @@ Detailed Modem HAL changelog can be found [here](lbm_lib/smtc_modem_hal/CHANGELO
 * Duty-cycle event to know when the Time On Air is reached or available
 * Test-mode event
 
+### Fixed
+
+* CRC error due to STORE_JOIN_SESSION mode.
+
 ### Changed
 
 * Enable CSMA by default for lbm_examples

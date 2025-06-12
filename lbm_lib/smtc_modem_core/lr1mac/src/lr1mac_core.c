@@ -807,16 +807,16 @@ void lr1mac_core_context_save( lr1_stack_mac_t* lr1_mac_obj )
     if( ( ctx.devnonce != lr1_mac_obj->dev_nonce ) ||
         ( memcmp( ctx.join_nonce, lr1_mac_obj->join_nonce, sizeof( ctx.join_nonce ) ) != 0 ) ||
         ( ctx.certification_enabled != lr1_mac_obj->is_lorawan_modem_certification_enabled ) ||
-        ( ctx.region != lr1_mac_obj->real->region_type ) 
+        ( ctx.region != lr1_mac_obj->real->region_type )
 #if defined( STORE_JOIN_SESSION )
 	|| ( memcmp( ctx.cf_list, lr1_mac_obj->cf_list, sizeof( ctx.cf_list ) ) != 0 ) ||
 	(ctx.fcnt_up != lr1_mac_obj->fcnt_up) ||
 	(ctx.fcnt_dwn != lr1_mac_obj->fcnt_dwn) ||
-	(ctx.dev_addr != lr1_mac_obj->dev_addr) || 
+	(ctx.dev_addr != lr1_mac_obj->dev_addr) ||
 	( ctx.rx2_data_rate != lr1_mac_obj->rx2_data_rate ) ||
 	( ctx.rx2_frequency != lr1_mac_obj->rx2_frequency ) ||
 	( ctx.rx1_dr_offset != lr1_mac_obj->rx1_dr_offset ) ||
-	( ctx.rx1_delay_s != lr1_mac_obj->rx1_delay_s ) || 
+	( ctx.rx1_delay_s != lr1_mac_obj->rx1_delay_s ) ||
 	( ctx.join_status != lr1_mac_obj->join_status )
 #endif
 	)
@@ -836,9 +836,9 @@ void lr1mac_core_context_save( lr1_stack_mac_t* lr1_mac_obj )
 	ctx.rx1_dr_offset	  = lr1_mac_obj->rx1_dr_offset;
 	ctx.rx1_delay_s	  	  = lr1_mac_obj->rx1_delay_s;
 	ctx.join_status	  	  = lr1_mac_obj->join_status;
-	ctx.crc                   = lr1mac_utilities_crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) );
-#endif	
-        smtc_modem_hal_context_store( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * sizeof( ctx ), ( uint8_t* ) &ctx,
+#endif
+        ctx.crc                   = lr1mac_utilities_crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) );
+	smtc_modem_hal_context_store( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * sizeof( ctx ), ( uint8_t* ) &ctx,
                                       sizeof( ctx ) );
 
         // dummy context reading to ensure context store is done before exiting the function
