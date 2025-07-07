@@ -230,6 +230,8 @@ void modem_context_init_light( void ( *callback )( void ), radio_planner_t* rp )
     // Increment reset counter
     modem_reset_counter++;
     report_all_downlinks_to_user = false;
+    // Save modem context - to keep the reset counter
+    modem_store_modem_context( );
 }
 
 fifo_ctrl_t* modem_context_get_fifo_obj( void )
