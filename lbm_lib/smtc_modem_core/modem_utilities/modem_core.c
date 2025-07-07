@@ -227,6 +227,8 @@ void modem_context_init_light( void ( *callback )( void ), radio_planner_t* rp )
     modem_load_modem_context( );
     // Increment reset counter
     modem_reset_counter++;
+    // Save modem context - to keep the reset counter
+    modem_store_modem_context( );
 }
 
 fifo_ctrl_t* modem_context_get_fifo_obj( void )

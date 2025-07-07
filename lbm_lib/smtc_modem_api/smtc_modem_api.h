@@ -1023,6 +1023,18 @@ smtc_modem_return_code_t smtc_modem_request_empty_uplink( uint8_t stack_id, bool
 smtc_modem_return_code_t smtc_modem_leave_network( uint8_t stack_id );
 
 /**
+ * @brief Cancel on ongoing processes and factory reset the modem
+ *
+ * @param [in] stack_id Stack identifier
+ *
+ * @return Modem return code as defined in @ref smtc_modem_return_code_t
+ * @retval SMTC_MODEM_RC_OK                Command executed without errors
+ * @retval SMTC_MODEM_RC_BUSY              Modem is currently in test mode
+ * @retval SMTC_MODEM_RC_INVALID_STACK_ID  Invalid \p stack_id
+ */
+smtc_modem_return_code_t smtc_modem_factory_reset( uint8_t stack_id );
+
+/**
  * @brief Get the radio communications suspend status
  *
  * @param [in] stack_id     Stack identifier

@@ -1104,6 +1104,23 @@ smtc_modem_return_code_t smtc_modem_leave_network( uint8_t stack_id )
     return return_code;
 }
 
+smtc_modem_return_code_t smtc_modem_factory_reset( uint8_t stack_id )
+{
+    smtc_modem_return_code_t return_code = SMTC_MODEM_RC_OK;
+    RETURN_BUSY_IF_TEST_MODE( );
+
+    // Stop processes
+    smtc_modem_set_class( stack_id, SMTC_MODEM_CLASS_A );
+    tx_protocol_manager_abort( );
+    modem_supervisor_abort_tasks_in_range( stack_id * NUMBER_OF_TASKS, ( ( stack_id + 1 ) * NUMBER_OF_TASKS ) - 1 );
+    lorawan_api_join_status_clear( stack_id );
+
+    // Reset all modem parameters to factory defaults
+    lorawan_api_factory_reset( stack_id );
+
+    return return_code;
+}
+
 smtc_modem_return_code_t smtc_modem_get_suspend_radio_communications( uint8_t stack_id, bool* suspend )
 {
     *suspend = modem_supervisor_get_modem_is_suspended( stack_id );
