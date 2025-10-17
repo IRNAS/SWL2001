@@ -998,7 +998,14 @@ static remote_multicast_setup_status_t remote_multicast_setup_package_parser(
                 multicast_group_params[mc_grp_id].params.frequency = rx_buffer[rx_buffer_index + 7] +
                                                                      ( rx_buffer[rx_buffer_index + 8] << 8 ) +
                                                                      ( rx_buffer[rx_buffer_index + 9] << 16 );
-                multicast_group_params[mc_grp_id].params.frequency *= 100;
+                // Note: Workaround for using FUOTA with 2.4Ghz
+		// There are only 3 bytes for frequency in the multicast setup command, which doesn't fit 2.4 ghz, so received frequency is divided by 2
+		// In the case of SMTC_REAL_REGION_WW2G4 multiply by 2
+		if( lorawan_api_get_region( stack_id ) == SMTC_REAL_REGION_WW2G4 )
+		{
+			multicast_group_params[mc_grp_id].params.frequency *= 2;
+		}
+		multicast_group_params[mc_grp_id].params.frequency *= 100;
                 multicast_group_params[mc_grp_id].params.dr = rx_buffer[rx_buffer_index + 10] & 0x0F;
                 SMTC_MODEM_HAL_TRACE_PRINTF(
                     "multicast_group_params %d ;%d ;%d ;%d \n", multicast_group_params[mc_grp_id].params.session_time,

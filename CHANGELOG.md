@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 * Add user access to the `lorawan_api_set_no_rx_packet_threshold` function.
 * Add user access to the beacon statistics data with `smtc_modem_class_b_beacon_get_statistics` function.
 * Add user access to the `smtc_modem_factory_reset` function.
+* Add support for 2.4 Ghz multicast class C session frequency setting.
 
 ## [v4.8.0] 2024-12-20
 
