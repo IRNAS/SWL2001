@@ -118,6 +118,7 @@ struct
 /* clang-format off */
 #define task_manager modem_supervisor_context.task_manager
 
+/* EvaTODO: do we need cb for each stack? */
 #define supervisor_context_callback modem_supervisor_context.supervisor_context_callback
 #define supervisor_on_launch_func modem_supervisor_context.supervisor_on_launch_func
 #define supervisor_on_update_func modem_supervisor_context.supervisor_on_update_func
@@ -256,6 +257,7 @@ stask_manager* modem_supervisor_get_task( void )
 
 // backoff_mobile_static( ); @todo//
 // todo check_class_b_to_generate_event( );
+// EvaTODO: we probably need multiple smtc engines for multi stack?
 
 uint32_t modem_supervisor_engine( void )
 {
@@ -302,7 +304,8 @@ uint32_t modem_supervisor_engine( void )
         supervisor_on_launch_func[CURRENT_TASK_ID]( supervisor_context_callback[CURRENT_TASK_ID] );
         task_manager.modem_task[task_manager.next_task_id].priority = TASK_FINISH;
     }
-    uint32_t alarm                 = modem_get_user_alarm( );
+
+    uint32_t alarm                 = modem_get_user_alarm( task_manager.modem_task[task_manager.next_task_id].stack_id );
     int32_t  user_alarm_in_seconds = MODEM_MAX_ALARM_S / 1000;
     if( alarm != 0 )
     {
@@ -346,7 +349,8 @@ void modem_supervisor_set_modem_mute_with_priority_parameter( task_priority_t pr
 
 static uint32_t supervisor_check_user_alarm( void )
 {
-    uint32_t alarm                 = modem_get_user_alarm( );
+    // EvaTODO stack_id
+    uint32_t alarm                 = modem_get_user_alarm( 0 );
     int32_t  user_alarm_in_seconds = MODEM_MAX_ALARM_S;
     // manage the user alarm
     if( alarm != 0 )

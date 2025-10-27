@@ -206,10 +206,11 @@ static void rp_task_print( const radio_planner_t* rp, const rp_task_t* task );
  * --- PUBLIC FUNCTIONS DEFINITION ---------------------------------------------
  */
 
-void rp_init( radio_planner_t* rp, const ralf_t* radio )
+void rp_init( uint8_t stack_id, radio_planner_t* rp, const ralf_t* radio )
 {
     memset( rp, 0, sizeof( radio_planner_t ) );
     rp->radio = radio;
+    rp->stack_id = stack_id;
 
     for( int32_t i = 0; i < RP_NB_HOOKS; i++ )
     {
@@ -520,7 +521,7 @@ void rp_callback( radio_planner_t* rp )
             SMTC_MODEM_HAL_TRACE_PRINTF( " radio planner it but no more task activated\n" );
         }
 
-        smtc_modem_hal_set_ant_switch( false );
+        smtc_modem_hal_set_ant_switch( rp->stack_id, false );
         // Shut Down the TCXO
         smtc_modem_hal_stop_radio_tcxo( );
     }
@@ -687,7 +688,7 @@ static void rp_task_arbiter( radio_planner_t* rp, const char* caller_func_name )
 
                     rp->radio_irq_flag = false;
 
-                    smtc_modem_hal_set_ant_switch( false );
+                    smtc_modem_hal_set_ant_switch( rp->stack_id, false );
                     // Shut Down the TCXO
                     smtc_modem_hal_stop_radio_tcxo( );
 

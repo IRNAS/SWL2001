@@ -259,11 +259,12 @@ uint32_t smtc_modem_hal_get_random_nb_in_range( const uint32_t val_1, const uint
 /**
  * @brief Config the radio interruption callback
  *
+ * @param [in] stack_id    Stack identifier
  * @param [in] callback     Callback that will be called in case of timer irq
  * @param [in] context      Context that will be passed on callback argument
  *
  */
-void smtc_modem_hal_irq_config_radio_irq( void ( *callback )( void* context ), void* context );
+void smtc_modem_hal_irq_config_radio_irq( uint8_t stack_id, void ( *callback )( void* context ), void* context );
 
 
 
@@ -301,9 +302,10 @@ uint32_t smtc_modem_hal_get_radio_tcxo_startup_delay_ms( void );
 /**
  * @brief Set antenna switch for Tx operation or not.
  *
+ * @param [in] stack_id Stack identifier
  * @param [in] is_tx_on Indicates if the antenna switch must be set for Tx operation or not
  */
-void smtc_modem_hal_set_ant_switch( bool is_tx_on );
+void smtc_modem_hal_set_ant_switch( uint8_t stack_id, bool is_tx_on );
 
 /* ------------ Environment management ------------*/
 

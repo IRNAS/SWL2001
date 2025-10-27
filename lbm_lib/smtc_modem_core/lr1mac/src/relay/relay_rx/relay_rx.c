@@ -1619,7 +1619,7 @@ static void relay_rxr_tx_launch_callback( void* rp_void )
     }
     // At this time only tcxo startup delay is remaining
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( true );
+    smtc_modem_hal_set_ant_switch( rp->stack_id, true );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_tx( &( rp->radio->ral ) ) == RAL_STATUS_OK );
     rp_stats_set_tx_timestamp( &rp->stats, smtc_modem_hal_get_time_in_ms( ) );
 }

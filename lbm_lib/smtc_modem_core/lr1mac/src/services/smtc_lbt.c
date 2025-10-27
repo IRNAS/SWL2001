@@ -106,7 +106,7 @@ void smtc_lbt_launch_callback_for_rp( void* rp_void )
     uint8_t          id = rp->radio_task_id;
     int16_t          rssi_tmp;
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( false );
+    smtc_modem_hal_set_ant_switch( rp->stack_id, false );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_pkt_type( &( rp->radio->ral ), rp->radio_params[id].pkt_type ) ==
                                      RAL_STATUS_OK );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE(

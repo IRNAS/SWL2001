@@ -122,13 +122,14 @@
  * -----------------------------------------------------------------------------
  * --- PRIVATE MACROS-----------------------------------------------------------
  */
+// EvaTODO stack_id!
 #if defined( BYPASS_CHECK_TEST_MODE )
 #define RETURN_BUSY_IF_TEST_MODE( )
 #else
 #define RETURN_BUSY_IF_TEST_MODE( )                 \
     do                                              \
     {                                               \
-        if( true == modem_get_test_mode_status( ) ) \
+	if( true == modem_get_test_mode_status( 0 ) ) \
         {                                           \
             return SMTC_MODEM_RC_BUSY;              \
         }                                           \
@@ -187,20 +188,28 @@ typedef struct modem_key_ctx_s
  * --- PRIVATE VARIABLES -------------------------------------------------------
  */
 
-radio_planner_t modem_radio_planner;
+radio_planner_t modem_radio_planner[NUMBER_OF_STACKS];
 
+ralf_t modem_radio[NUMBER_OF_STACKS];
+
+// EvaTODO make macro implementation later
 #if defined( SX128X )
-ralf_t modem_radio = RALF_SX128X_INSTANTIATE( NULL );
+modem_radio[0] = RALF_SX128X_INSTANTIATE( NULL );
+modem_radio[1] = RALF_SX128X_INSTANTIATE( NULL );
 #elif defined( SX126X )
-ralf_t modem_radio = RALF_SX126X_INSTANTIATE( NULL );
+modem_radio[0] = RALF_SX126X_INSTANTIATE( NULL );
+modem_radio[1] = RALF_SX126X_INSTANTIATE( NULL );
 #elif defined( LR11XX )
-ralf_t modem_radio = RALF_LR11XX_INSTANTIATE( NULL );
+modem_radio[0] = RALF_LR11XX_INSTANTIATE( NULL );
+modem_radio[1] = RALF_LR11XX_INSTANTIATE( NULL );
 #elif defined( LR20XX )
-ralf_t modem_radio = RALF_LR20XX_INSTANTIATE( NULL );
+modem_radio[0] = RALF_LR20XX_INSTANTIATE( NULL );
+modem_radio[1] = RALF_LR20XX_INSTANTIATE( NULL );
 #elif defined( SX127X )
 #include "sx127x.h"
 static sx127x_t sx127x;
-ralf_t          modem_radio = RALF_SX127X_INSTANTIATE( &sx127x );
+modem_radio[0] = RALF_SX127X_INSTANTIATE( &sx127x );
+modem_radio[1] = RALF_SX127X_INSTANTIATE( &sx127x );
 #else
 #error "Please select radio board.."
 #endif
@@ -214,6 +223,7 @@ struct
     uint8_t  modem_data_block_int_key[16];
 } smtc_modem_key_ctx;
 
+/* EvaTODO add multiple instances */
 #define modem_appkey_status smtc_modem_key_ctx.modem_appkey_status
 #define modem_appkey_crc smtc_modem_key_ctx.modem_appkey_crc
 #define modem_gen_appkey_status smtc_modem_key_ctx.modem_gen_appkey_status
@@ -247,64 +257,78 @@ static void modem_load_appkey_context( void );
  */
 
 /* ------------ Modem Utilities ------------*/
-
-void smtc_modem_init( void ( *callback_event )( void ) )
+CONTINUE!!!!
+void smtc_modem_init_common( void ( *callback_event )( void ) )
 {
-    SMTC_MODEM_HAL_TRACE_INFO( "Modem Initialization\n" );
+    SMTC_MODEM_HAL_TRACE_INFO( "Modem Common Initialization\n" );
 
-    // init radio and put it in sleep mode
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_reset( &( modem_radio.ral ) ) == RAL_STATUS_OK );
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_init( &( modem_radio.ral ) ) == RAL_STATUS_OK );
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_sleep( &( modem_radio.ral ), true ) == RAL_STATUS_OK );
-    smtc_modem_hal_set_ant_switch( false );
-    // init radio planner and attach corresponding radio irq
-    rp_init( &modem_radio_planner, &modem_radio );
-
-    smtc_modem_hal_irq_config_radio_irq( rp_radio_irq_callback, &modem_radio_planner );
-
-    rp_hook_init( &modem_radio_planner, RP_HOOK_ID_SUSPEND, ( void ( * )( void* ) )( empty_callback ),
-                  &modem_radio_planner );
-
-    smtc_secure_element_init( );
     modem_supervisor_init( );
-    modem_context_init_light( callback_event, &modem_radio_planner );
-    modem_tx_protocol_manager_init( &modem_radio_planner );
-    // If lr11xx crypto engine is used for crypto
+    modem_context_init_common( callback_event );
+    modem_tx_protocol_manager_init( modem_radio_planner );
+    // If lr11xx crypto engine is used for crypto - EvaTODO look into this, not working now
 #if defined( USE_LR11XX_CE )
     modem_load_appkey_context( );
 #endif
-    // Event EVENT_RESET must be done at the end of init !!
-    increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_RESET, 0, 0xFF );
 }
 
-uint32_t smtc_modem_run_engine( void )
+void smtc_modem_init( uint8_t stack_id )
 {
-    rp_callback( &modem_radio_planner );
+
+    SMTC_MODEM_HAL_TRACE_INFO( "Modem Initialization stack ID: %d\n", stack_id );
+
+    // init radio and put it in sleep mode
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_reset( &( modem_radio[stack_id].ral ) ) == RAL_STATUS_OK );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_init( &( modem_radio[stack_id].ral ) ) == RAL_STATUS_OK );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_sleep( &( modem_radio[stack_id].ral ), true ) == RAL_STATUS_OK );
+
+    smtc_modem_hal_set_ant_switch( stack_id, false );
+    // init radio planner and attach corresponding radio irq
+    rp_init( stack_id, &modem_radio_planner[stack_id], &modem_radio[stack_id] );
+
+    smtc_modem_hal_irq_config_radio_irq( stack_id, rp_radio_irq_callback, &modem_radio_planner[stack_id] );
+
+    rp_hook_init( &modem_radio_planner[stack_id], RP_HOOK_ID_SUSPEND, ( void ( * )( void* ) )( empty_callback ),
+			&modem_radio_planner[stack_id] );
+
+    // EvaTODO -revisit, for now only soft ce is implemented
+    smtc_secure_element_init( stack_id );
+    modem_context_init_light( stack_id, &modem_radio_planner[stack_id] );
+
+    // Is this going to work?
+    // Event EVENT_RESET must be done at the end of init !!
+    increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_RESET, 0, stack_id );
+
+}
+
+uint32_t smtc_modem_run_engine( uint8_t stack_id )
+{
+    // EvaTODO - this is not optimal
+    rp_callback( &modem_radio_planner[stack_id] );
     return modem_supervisor_engine( );
 }
 
-void smtc_modem_set_radio_context( const void* radio_ctx )
+void smtc_modem_set_radio_context( uint8_t stack_id, const void* radio_ctx )
 {
 #if defined( SX1272 ) || defined( SX1276 )
     // update modem_radio context with provided one
-    ( ( sx127x_t* ) modem_radio.ral.context )->hal_context = radio_ctx;
+    ( ( sx127x_t* ) modem_radio[stack_id].ral.context )->hal_context = radio_ctx;
 #else
     // update modem_radio context with provided one
-    modem_radio.ral.context = radio_ctx;
+    modem_radio[stack_id].ral.context = radio_ctx;
 #endif
     // Save modem radio context in case of direct access to radio by the modem
-    modem_set_radio_ctx( modem_radio.ral.context );
+    modem_set_radio_ctx( stack_id, modem_radio[stack_id].ral.context );
 }
 
-const void* smtc_modem_get_radio_context( void )
+const void* smtc_modem_get_radio_context( uint8_t stack_id )
 {
     // Get radio context
-    return modem_radio.ral.context;
+    return modem_radio[stack_id].ral.context;
 }
 
-bool smtc_modem_is_irq_flag_pending( void )
+bool smtc_modem_is_irq_flag_pending( uint8_t stack_id )
 {
-    return rp_get_irq_flag( &modem_radio_planner );
+    return rp_get_irq_flag( &modem_radio_planner[stack_id] );
 }
 
 /* ------------ Modem Generic Api ------------*/
@@ -805,7 +829,7 @@ smtc_modem_return_code_t smtc_modem_get_event( smtc_modem_event_t* event, uint8_
         switch( event->event_type )
         {
         case SMTC_MODEM_EVENT_RESET:
-            event->event_data.reset.count = ( uint16_t ) modem_get_reset_counter( );
+            event->event_data.reset.count = ( uint16_t ) modem_get_reset_counter( stack_id );
             break;
         case SMTC_MODEM_EVENT_TXDONE:
             event->event_data.txdone.status =
@@ -925,7 +949,8 @@ smtc_modem_return_code_t smtc_modem_get_downlink_data( uint8_t  buff[SMTC_MODEM_
     RETURN_INVALID_IF_NULL( remaining_data_nb );
 
     smtc_modem_return_code_t rc       = SMTC_MODEM_RC_OK;
-    fifo_ctrl_t*             fifo_obj = modem_context_get_fifo_obj( );
+    //EvaTODO support stack_id
+    fifo_ctrl_t*             fifo_obj = modem_context_get_fifo_obj( 0 );
 
     // get_nb of data in fifo
     uint16_t nb_of_data = fifo_ctrl_get_nb_elt( fifo_obj );
@@ -1151,16 +1176,20 @@ smtc_modem_return_code_t smtc_modem_suspend_radio_communications( bool suspend )
         {
             smtc_modem_set_class( i, SMTC_MODEM_CLASS_A );
             lorawan_api_core_abort( i );
+	    local_rc = modem_suspend_radio_access( i );
+            local_rc = modem_resume_radio_access( i );
+            local_rc = modem_suspend_radio_access( i );
         }
         // First disable failsafe check for radio planner as the suspended task can be longer than failsafe value
         rp_disable_failsafe( &modem_radio_planner, true );
-        local_rc = modem_suspend_radio_access( );
-        local_rc = modem_resume_radio_access( );
-        local_rc = modem_suspend_radio_access( );
+
     }
     else
     {
-        local_rc = modem_resume_radio_access( );
+        for( uint8_t i = 0; i < NUMBER_OF_STACKS; i++ )
+        {
+	    local_rc = modem_resume_radio_access( i );
+	}
         // Re enable failsafe on radio planner
         rp_disable_failsafe( &modem_radio_planner, false );
     }
@@ -1183,14 +1212,15 @@ smtc_modem_return_code_t smtc_modem_alarm_clear_timer( void )
 {
     RETURN_BUSY_IF_TEST_MODE( );
 
-    if( modem_get_user_alarm( ) == 0 )
+    //EvaTODO stack_id
+    if( modem_get_user_alarm( 0 ) == 0 )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "Alarm clear timer impossible: no alarm timer is currently running\n" )
         return SMTC_MODEM_RC_NOT_INIT;
     }
     else
     {
-        modem_set_user_alarm( 0 );
+        modem_set_user_alarm(0, 0 );
         return SMTC_MODEM_RC_OK;
     }
 }
@@ -1200,14 +1230,15 @@ smtc_modem_return_code_t smtc_modem_alarm_get_remaining_time( uint32_t* remainin
     RETURN_BUSY_IF_TEST_MODE( );
     RETURN_INVALID_IF_NULL( remaining_time_in_s );
 
-    if( modem_get_user_alarm( ) == 0 )
+    //EvaTODO stack_id
+    if( modem_get_user_alarm( 0 ) == 0 )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "Alarm get remaining impossible: no alarm timer is currently running\n" )
         return SMTC_MODEM_RC_NOT_INIT;
     }
     else
     {
-        int32_t abs_remaining_time = ( int32_t ) ( modem_get_user_alarm( ) - smtc_modem_hal_get_time_in_s( ) );
+        int32_t abs_remaining_time = ( int32_t ) ( modem_get_user_alarm( 0) - smtc_modem_hal_get_time_in_s( ) );
 
         *remaining_time_in_s = ( abs_remaining_time > 0 ) ? ( abs_remaining_time ) : 0;
         return SMTC_MODEM_RC_OK;
@@ -1240,7 +1271,7 @@ smtc_modem_return_code_t smtc_modem_get_pin( uint8_t stack_id, uint8_t chip_pin[
         return SMTC_MODEM_RC_FAIL;
     }
 
-    lr11xx_status_t status = lr11xx_system_read_pin_custom_eui( modem_get_radio_ctx( ), deveui, joineui, 0, chip_pin );
+    lr11xx_status_t status = lr11xx_system_read_pin_custom_eui( modem_get_radio_ctx( stack_id ), deveui, joineui, 0, chip_pin );
 
     // when pin code is read, a new key derivation is done in lr11xx so a external key is used it will be lost
     // and shall be updated once more. Corrupt the key crc so that update is possible
@@ -1259,7 +1290,7 @@ smtc_modem_return_code_t smtc_modem_get_chip_eui( uint8_t stack_id, uint8_t chip
 {
     RETURN_BUSY_IF_TEST_MODE( );
 
-    lr11xx_status_t status = lr11xx_system_read_uid( modem_get_radio_ctx( ), chip_eui );
+    lr11xx_status_t status = lr11xx_system_read_uid( modem_get_radio_ctx( stack_id ), chip_eui );
 
     if( status != LR11XX_STATUS_OK )
     {
@@ -1293,7 +1324,7 @@ smtc_modem_return_code_t smtc_modem_derive_keys( uint8_t stack_id )
     }
 
     // Read pin code with current EUIs forces a key derivation
-    lr11xx_status_t status = lr11xx_system_read_pin_custom_eui( modem_get_radio_ctx( ), deveui, joineui, 0, pin );
+    lr11xx_status_t status = lr11xx_system_read_pin_custom_eui( modem_get_radio_ctx( stack_id ), deveui, joineui, 0, pin );
 
     // when pin code is read, a new key derivation is done in lr11xx so a external key is used it will be lost
     // and shall be updated once more. Corrupt the key crc so that update is possible
@@ -1415,7 +1446,7 @@ smtc_modem_return_code_t smtc_modem_get_adr_ack_limit_delay( uint8_t stack_id, u
 smtc_modem_return_code_t smtc_modem_set_report_all_downlinks_to_user( uint8_t stack_id, bool report_all_downlinks )
 {
     RETURN_BUSY_IF_TEST_MODE( );
-    modem_set_report_all_downlinks_to_user( report_all_downlinks );
+    modem_set_report_all_downlinks_to_user( stack_id, report_all_downlinks );
     return SMTC_MODEM_RC_OK;
 }
 
@@ -1423,7 +1454,7 @@ smtc_modem_return_code_t smtc_modem_get_report_all_downlinks_to_user( uint8_t st
 {
     RETURN_BUSY_IF_TEST_MODE( );
     RETURN_INVALID_IF_NULL( report_all_downlinks );
-    *report_all_downlinks = modem_get_report_all_downlinks_to_user( );
+    *report_all_downlinks = modem_get_report_all_downlinks_to_user( stack_id );
     return SMTC_MODEM_RC_OK;
 }
 
@@ -2270,22 +2301,21 @@ smtc_modem_return_code_t smtc_modem_gnss_send_mode( uint8_t stack_id, smtc_modem
 smtc_modem_return_code_t smtc_modem_almanac_full_update( uint8_t stack_id, const uint8_t* almanac,
                                                          uint16_t almanac_size )
 {
-    UNUSED( stack_id );
     RETURN_BUSY_IF_TEST_MODE( );
     RETURN_INVALID_IF_NULL( almanac );
 
     /* Suspend the modem to get radio access */
-    if( modem_suspend_radio_access( ) == false )
+    if( modem_suspend_radio_access( stack_id ) == false )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "smtc_modem_almanac_full_update: failed to suspend modem\n" );
         return SMTC_MODEM_RC_FAIL;
     }
-    if( modem_resume_radio_access( ) == false )
+    if( modem_resume_radio_access( stack_id ) == false )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "smtc_modem_almanac_full_update: failed to resume modem\n" );
         return SMTC_MODEM_RC_FAIL;
     }
-    if( modem_suspend_radio_access( ) == false )
+    if( modem_suspend_radio_access( stack_id ) == false )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "smtc_modem_almanac_full_update: failed to suspend modem\n" );
         return SMTC_MODEM_RC_FAIL;
@@ -2299,7 +2329,7 @@ smtc_modem_return_code_t smtc_modem_almanac_full_update( uint8_t stack_id, const
     }
 
     /* Resume the modem */
-    if( modem_resume_radio_access( ) == false )
+    if( modem_resume_radio_access( stack_id ) == false )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "smtc_modem_almanac_full_update: failed to resume modem\n" );
         return SMTC_MODEM_RC_FAIL;
@@ -3082,8 +3112,8 @@ smtc_modem_return_code_t smtc_modem_relay_tx_disable( uint8_t stack_id )
 
 #endif
 
-bool smtc_modem_radio_is_free( void )
+bool smtc_modem_radio_is_free( uint8_t stack_id )
 {
-    return rp_radio_is_free( &modem_radio_planner );
+    return rp_radio_is_free( &modem_radio_planner[stack_id] );
 }
 /* --- EOF ------------------------------------------------------------------ */

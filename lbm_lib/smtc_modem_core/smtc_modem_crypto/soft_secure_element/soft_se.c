@@ -402,17 +402,14 @@ uint32_t soft_ce_crc( const uint8_t* buf, int len );
  * --- PUBLIC FUNCTIONS DEFINITION ---------------------------------------------
  */
 
-smtc_se_return_code_t smtc_secure_element_init( void )
+smtc_se_return_code_t smtc_secure_element_init( uint8_t stack_id )
 {
     soft_se_data_t local_data = { .deveui   = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
                                   .joineui  = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
                                   .pin      = { 0x00, 0x00, 0x00, 0x00 },
                                   .key_list = SOFT_SE_KEY_LIST };
     // init soft secure element data euis and pin to 0 and key_list with empty lut
-    for( uint8_t stack_id = 0; stack_id < NUMBER_OF_STACKS; stack_id++ )
-    {
-        memcpy( ( uint8_t* ) &soft_se_data[stack_id], ( uint8_t* ) &local_data, sizeof( local_data ) );
-    }
+    memcpy( ( uint8_t* ) &soft_se_data[stack_id], ( uint8_t* ) &local_data, sizeof( local_data ) );
     SMTC_MODEM_HAL_TRACE_INFO( "Use soft secure element for cryptographic functionalities\n" );
 
     return SMTC_SE_RC_SUCCESS;

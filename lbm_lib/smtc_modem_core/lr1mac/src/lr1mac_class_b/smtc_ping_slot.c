@@ -1208,7 +1208,7 @@ static void ping_slot_mac_rx_lora_launch_callback_for_rp( void* rp_void )
     {
     }
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( false );
+    smtc_modem_hal_set_ant_switch( rp->stack_id,false );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_rx( &( rp->radio->ral ), rp->radio_params[id].rx.timeout_in_ms ) ==
                                      RAL_STATUS_OK );
     rp_stats_set_rx_timestamp( &rp->stats, smtc_modem_hal_get_time_in_ms( ) );

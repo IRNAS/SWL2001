@@ -245,7 +245,7 @@ void wor_ral_callback_start_tx( void* rp_void )
         // Do nothing
     }
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( true );
+    smtc_modem_hal_set_ant_switch( rp->stack_id, true );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_tx( &( rp->radio->ral ) ) == RAL_STATUS_OK );
     rp_stats_set_tx_timestamp( &rp->stats, smtc_modem_hal_get_time_in_ms( ) );
 }
@@ -277,7 +277,7 @@ void wor_ral_callback_start_rx( void* rp_void )
     {
     }
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( false );
+    smtc_modem_hal_set_ant_switch( rp->stack_id, false );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_rx( &( rp->radio->ral ), rp->radio_params[id].rx.timeout_in_ms + 1000 ) ==
                                      RAL_STATUS_OK );
 
@@ -468,7 +468,7 @@ void wor_ral_callback_start_cad( void* rp_void )
     }
     // At this time only tcxo startup delay is remaining
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( false );
+    smtc_modem_hal_set_ant_switch( rp->stack_id, false );
 
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_lora_cad( &( rp->radio->ral ) ) == RAL_STATUS_OK );
     rp_stats_set_rx_timestamp( &rp->stats, smtc_modem_hal_get_time_in_ms( ) );

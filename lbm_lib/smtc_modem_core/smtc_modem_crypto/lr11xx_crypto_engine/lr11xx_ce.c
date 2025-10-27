@@ -114,7 +114,8 @@ typedef struct lr11xx_ce_context_nvm_s
  * --- PRIVATE VARIABLES -------------------------------------------------------
  */
 
-static lr11xx_ce_data_t lr11xx_ce_data;
+/* EvaTODO: implement multi chip support - for now just disable lr11xxce */
+static lr11xx_ce_data_t lr11xx_ce_data[NUMBER_OF_STACKS] = { 0 };
 static const void*      lr11xx_ctx;
 
 /*
@@ -144,7 +145,7 @@ uint32_t lr11xx_ce_crc( const uint8_t* buf, int len );
  * --- PUBLIC FUNCTIONS DEFINITION ---------------------------------------------
  */
 
-smtc_se_return_code_t smtc_secure_element_init( void )
+smtc_se_return_code_t smtc_secure_element_init( uint8_t stack_id )
 {
     SMTC_MODEM_HAL_TRACE_INFO( "Use lr11xx crypto engine for cryptographic functionalities\n" );
 
@@ -154,7 +155,7 @@ smtc_se_return_code_t smtc_secure_element_init( void )
     memset( &lr11xx_ce_data, 0, sizeof( lr11xx_ce_data_t ) );
 
     // get radio context
-    lr11xx_ctx = modem_get_radio_ctx( );
+    lr11xx_ctx = modem_get_radio_ctx( stack_id );
 
     // Restore lr11xx crypto data from flash memory into RAM
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( lr11xx_crypto_restore_from_flash( lr11xx_ctx, &lr11xx_crypto_status ) ==
@@ -191,7 +192,7 @@ smtc_se_return_code_t smtc_secure_element_set_key( smtc_se_key_identifier_t key_
     lr11xx_crypto_keys_idx_t lr11xx_key_id = convert_key_id_from_se_to_lr11xx( key_id );
 
     // lr11xx crypto operation needed: suspend modem radio access to secure this direct access
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_suspend_radio_access( ) == true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_suspend_radio_access( stack_id ) == true );
 
     if( ( key_id == SMTC_SE_MC_KEY_0 ) || ( key_id == SMTC_SE_MC_KEY_1 ) || ( key_id == SMTC_SE_MC_KEY_2 ) ||
         ( key_id == SMTC_SE_MC_KEY_3 ) )
@@ -215,7 +216,7 @@ smtc_se_return_code_t smtc_secure_element_set_key( smtc_se_key_identifier_t key_
     }
 
     // lr11xx crypto operation done: resume modem radio access
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_resume_radio_access( ) == true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_resume_radio_access( stack_id) == true );
 
     return status;
 }
@@ -238,7 +239,7 @@ smtc_se_return_code_t smtc_secure_element_compute_aes_cmac( const uint8_t* mic_b
     }
 
     // lr11xx crypto operation needed: suspend modem radio access to secure this direct access
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_suspend_radio_access( ) == true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_suspend_radio_access( stack_id ) == true );
 
     if( mic_bx_buffer != NULL )
     {
@@ -264,7 +265,7 @@ smtc_se_return_code_t smtc_secure_element_compute_aes_cmac( const uint8_t* mic_b
     }
 
     // lr11xx crypto operation done: resume modem radio access
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_resume_radio_access( ) == true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_resume_radio_access( stack_id) == true );
 
     return status;
 }
@@ -280,7 +281,7 @@ smtc_se_return_code_t smtc_secure_element_verify_aes_cmac( uint8_t* buffer, uint
     }
 
     // lr11xx crypto operation needed: suspend modem radio access to secure this direct access
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_suspend_radio_access( ) == true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_suspend_radio_access( stack_id ) == true );
 
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( lr11xx_crypto_verify_aes_cmac( lr11xx_ctx, ( lr11xx_crypto_status_t* ) &status,
                                                                     convert_key_id_from_se_to_lr11xx( key_id ), buffer,
@@ -288,7 +289,7 @@ smtc_se_return_code_t smtc_secure_element_verify_aes_cmac( uint8_t* buffer, uint
                                                                     ( uint8_t* ) &expected_cmac ) == LR11XX_STATUS_OK );
 
     // lr11xx crypto operation done: resume modem radio access
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_resume_radio_access( ) == true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_resume_radio_access( stack_id) == true );
 
     return status;
 }
@@ -305,7 +306,7 @@ smtc_se_return_code_t smtc_secure_element_aes_encrypt( const uint8_t* buffer, ui
     }
 
     // lr11xx crypto operation needed: suspend modem radio access to secure this direct access
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_suspend_radio_access( ) == true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_suspend_radio_access( stack_id ) == true );
 
     if( key_id == SMTC_SE_SLOT_RAND_ZERO_KEY )
     {
@@ -321,7 +322,7 @@ smtc_se_return_code_t smtc_secure_element_aes_encrypt( const uint8_t* buffer, ui
     }
 
     // lr11xx crypto operation done: resume modem radio access
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_resume_radio_access( ) == true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_resume_radio_access( stack_id) == true );
 
     return status;
 }
@@ -338,7 +339,7 @@ smtc_se_return_code_t smtc_secure_element_derive_and_store_key( uint8_t* input, 
     }
 
     // lr11xx crypto operation needed: suspend modem radio access to secure this direct access
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_suspend_radio_access( ) == true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_suspend_radio_access( stack_id ) == true );
 
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( lr11xx_crypto_derive_key( lr11xx_ctx, ( lr11xx_crypto_status_t* ) &status,
                                                                convert_key_id_from_se_to_lr11xx( rootkey_id ),
@@ -349,7 +350,7 @@ smtc_se_return_code_t smtc_secure_element_derive_and_store_key( uint8_t* input, 
                                      LR11XX_STATUS_OK );
 
     // lr11xx crypto operation done: resume modem radio access
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_resume_radio_access( ) == true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_resume_radio_access( stack_id) == true );
 
     return status;
 }
@@ -364,7 +365,7 @@ smtc_se_return_code_t smtc_secure_element_derive_relay_session_keys( uint32_t de
     block[0] = 0x01;
 
     // lr11xx crypto operation needed: suspend modem radio access to secure this direct access
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_suspend_radio_access( ) == true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_suspend_radio_access( stack_id ) == true );
 
     // key = RELAY_ROOT_WOR_S_KEY
     SMTC_MODEM_HAL_PANIC_ON_FAILURE(
@@ -438,7 +439,7 @@ smtc_se_return_code_t smtc_secure_element_derive_relay_session_keys( uint32_t de
     }
 
     // lr11xx crypto operation done: resume modem radio access
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_resume_radio_access( ) == true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_resume_radio_access( stack_id ) == true );
 
     return status;
 }
@@ -478,7 +479,7 @@ smtc_se_return_code_t smtc_secure_element_process_join_accept( smtc_se_join_req_
     uint8_t mic_header_10x[1] = { 0x20 };
 
     // lr11xx crypto operation needed: suspend modem radio access to secure this direct access
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_suspend_radio_access( ) == true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_suspend_radio_access( stack_id ) == true );
 
     //   cmac = aes128_cmac(NwkKey, MHDR |  JoinNonce | NetID | DevAddr | DLSettings | RxDelay | CFList |
     //   CFListType)
@@ -489,7 +490,7 @@ smtc_se_return_code_t smtc_secure_element_process_join_accept( smtc_se_join_req_
             enc_join_accept + 1, enc_join_accept_size - 1, dec_join_accept + 1 ) == LR11XX_STATUS_OK );
 
     // lr11xx crypto operation done: resume modem radio access
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_resume_radio_access( ) == true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( modem_resume_radio_access( stack_id ) == true );
 
     if( status == SMTC_SE_RC_SUCCESS )
     {
