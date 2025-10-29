@@ -274,50 +274,54 @@ static status_lorawan_t ( *launch_tpm_func[TPM_NUMBER_OF_STATE] )( void ) = {
  * -----------------------------------------------------------------------------
  * --- PUBLIC FUNCTIONS DEFINITION ---------------------------------------------
  */
+
+void modem_tx_protocol_manager_init_common(void)
+{
+    memset( &modem_tpm_context, 0, sizeof( modem_tpm_context ) );
+    current_tpm_transaction_is_a_retransmit = false;
+    current_tpm_transmit_at_time            = false;
+
+    reset_tpm_list( );
+}
+
 /**
  * @brief call by smtc_modem_init to init the tx protocol manager
  *
  * @param rp pointer to the radioplanner object
  */
-void modem_tx_protocol_manager_init(  radio_planner_t* rp )
+void modem_tx_protocol_manager_init(  uint8_t stack_id, radio_planner_t* rp )
 {
-    memset( &modem_tpm_context, 0, sizeof( modem_tpm_context ) );
-    current_tpm_transaction_is_a_retransmit = false;
-    current_tpm_transmit_at_time            = false;
-    for( int i = 0; i < NUMBER_OF_STACKS; i++ )
-    {
-        current_tpm_rp_target[i] = &rp[i];
-	smtc_lbt_init( smtc_lbt_get_obj( i ), current_tpm_rp_target[i], RP_HOOK_ID_LBT + i,
+
+       current_tpm_rp_target[stack_id] = rp;
+	smtc_lbt_init( smtc_lbt_get_obj( stack_id ), current_tpm_rp_target[stack_id], RP_HOOK_ID_LBT + stack_id,
                        ( void ( * )( void* ) ) modem_tpm_radio_free_lbt, NULL,
                        ( void ( * )( void* ) ) modem_tpm_radio_busy_lbt, NULL,
                        ( void ( * )( void* ) ) modem_tpm_radio_abort_lbt, NULL );
-        if( lorawan_api_stack_mac_get( i )->real->real_const.const_lbt_supported == true )
+        if( lorawan_api_stack_mac_get( stack_id )->real->real_const.const_lbt_supported == true )
         {
-            smtc_lbt_set_parameters( smtc_lbt_get_obj( lorawan_api_stack_mac_get( i )->stack_id ),
-                                     smtc_real_get_lbt_duration_ms( lorawan_api_stack_mac_get( i )->real ),
-                                     smtc_real_get_lbt_threshold_dbm( lorawan_api_stack_mac_get( i )->real ),
-                                     smtc_real_get_lbt_bw_hz( lorawan_api_stack_mac_get( i )->real ) );
-            smtc_lbt_set_state( smtc_lbt_get_obj( lorawan_api_stack_mac_get( i )->stack_id ), true );
+            smtc_lbt_set_parameters( smtc_lbt_get_obj( stack_id ),
+                                     smtc_real_get_lbt_duration_ms( lorawan_api_stack_mac_get( stack_id )->real ),
+                                     smtc_real_get_lbt_threshold_dbm( lorawan_api_stack_mac_get( stack_id )->real ),
+                                     smtc_real_get_lbt_bw_hz( lorawan_api_stack_mac_get( stack_id )->real ) );
+            smtc_lbt_set_state( smtc_lbt_get_obj( lorawan_api_stack_mac_get( stack_id )->stack_id ), true );
         }
 
 #if defined( ADD_CSMA )
-        smtc_lora_cad_bt_init( smtc_cad_get_obj( i ), current_tpm_rp_target[i], RP_HOOK_ID_CAD + i,
+        smtc_lora_cad_bt_init( smtc_cad_get_obj( stack_id ), current_tpm_rp_target[stack_id], RP_HOOK_ID_CAD + stack_id,
                                ( void ( * )( void* ) ) modem_tpm_radio_free_csma, NULL,
                                ( void ( * )( void* ) ) modem_tpm_radio_busy_csma, NULL,
                                ( void ( * )( void* ) ) modem_tpm_radio_free_cad_keep_channel, NULL,
                                ( void ( * )( void* ) ) modem_tpm_radio_abort_csma, NULL );
 #if defined( ENABLE_CSMA_BY_DEFAULT )
-        smtc_lora_cad_bt_set_state( smtc_cad_get_obj( i ), true );
+        smtc_lora_cad_bt_set_state( smtc_cad_get_obj( stack_id ), true );
 #endif
 #endif
 #if defined( ADD_RELAY_TX )
-        smtc_relay_tx_init( i, current_tpm_rp_target[i], lorawan_api_stack_mac_get( i )->real,
+        smtc_relay_tx_init( stack_id, current_tpm_rp_target[stack_id], lorawan_api_stack_mac_get( stack_id )->real,
                             ( void ( * )( void* ) ) modem_tpm_radio_free_relay_tx, NULL, NULL, NULL,
                             ( void ( * )( void* ) ) modem_tpm_radio_abort_relay_tx, NULL );
 
 #endif
-    }
-    reset_tpm_list( );
 }
 
 /**
@@ -1187,7 +1191,7 @@ static uint32_t update_add_delay_ms( void )
         uint32_t bw_hz;
         smtc_lbt_get_parameters( smtc_lbt_get_obj( current_tpm_stack_id ), &listen_duration_ms, &threshold_dbm,
                                  &bw_hz );
-        current_tpm_add_delay_ms += ( listen_duration_ms ) + smtc_modem_hal_get_radio_tcxo_startup_delay_ms( );
+        current_tpm_add_delay_ms += ( listen_duration_ms ) + smtc_modem_hal_get_radio_tcxo_startup_delay_ms( current_tpm_stack_id );
     }
 
     current_tpm_add_delay_ms += LOG_MARGIN_DELAY;

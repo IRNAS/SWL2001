@@ -142,10 +142,6 @@ void modem_context_init_common( void ( *callback )( void ) )
 {
     modem_event_init( callback );
 
-    //EvaTODO this probably also needs to be stack dependant
-    // Init duty-cycle object to 0
-    smtc_duty_cycle_init( );
-
     void ( *callback_on_launch_temp )( void* );
     void ( *callback_on_update_temp )( void* );
     void* context_callback_tmp;
@@ -198,6 +194,9 @@ void modem_context_init_light( uint8_t stack_id, radio_planner_t* rp )
 {
     modem_ctx_light[stack_id].modem_rp = rp;
 
+    // Init duty-cycle object to 0
+    smtc_duty_cycle_init( stack_id );
+
     lorawan_api_init( rp, stack_id, ( void ( * )( lr1_stack_mac_down_data_t* ) ) modem_downlink_callback );
 
     lorawan_api_dr_strategy_set( STATIC_ADR_MODE, stack_id );
@@ -213,20 +212,20 @@ void modem_context_init_light( uint8_t stack_id, radio_planner_t* rp )
     // to init duty cycle
     smtc_real_region_types_t region = lorawan_api_get_region( stack_id );
     lorawan_api_set_region( region, stack_id );
-
-    modem_ctx_light[stack_id].is_modem_in_test_mode = false;
-    modem_ctx_light[stack_id].user_alarm = 0x7FFFFFFF;
+	NADALJUJ TUKAJ!!!!!
+    //modem_ctx_light[stack_id].is_modem_in_test_mode = false;
+    //modem_ctx_light[stack_id].user_alarm = 0x7FFFFFFF;
 
     // save radio planner pointer for suspend/resume features
-    fifo_ctrl_init( &modem_ctx_light[stack_id].fifo_ctrl_obj, modem_ctx_light[stack_id].fifo_buffer, FIFO_LORAWAN_SIZE );
+    //fifo_ctrl_init( &modem_ctx_light[stack_id].fifo_ctrl_obj, modem_ctx_light[stack_id].fifo_buffer, FIFO_LORAWAN_SIZE );
 
     // load modem context
-    modem_load_modem_context( stack_id );
+    //modem_load_modem_context( stack_id );
     // Increment reset counter
-    modem_ctx_light[stack_id].modem_reset_counter++;
-    modem_ctx_light[stack_id].report_all_downlinks_to_user = false;
+    //modem_ctx_light[stack_id].modem_reset_counter++;
+    //modem_ctx_light[stack_id].report_all_downlinks_to_user = false;
     // Save modem context - to keep the reset counter
-    modem_store_modem_context( stack_id );
+    //modem_store_modem_context( stack_id );
 }
 
 fifo_ctrl_t* modem_context_get_fifo_obj( uint8_t stack_id )
@@ -336,7 +335,7 @@ int32_t modem_duty_cycle_get_status( uint8_t stack_id )
     int32_t region_dtc = 0;
     int32_t nwk_dtc    = lorawan_api_next_network_free_duty_cycle_ms_get( stack_id );
 
-    if( smtc_duty_cycle_enable_get( ) == SMTC_DTC_ENABLED )
+    if( smtc_duty_cycle_enable_get( stack_id ) == SMTC_DTC_ENABLED )
     {
         uint8_t  number_of_freq = 0;
         uint32_t freq_list[16]  = { 0 };  // Generally region with duty cycle support 16 channels only
@@ -344,7 +343,7 @@ int32_t modem_duty_cycle_get_status( uint8_t stack_id )
         if( lorawan_api_get_current_enabled_frequencies_list(
                 &number_of_freq, freq_list, sizeof( freq_list ) / sizeof( freq_list[0] ), stack_id ) == true )
         {
-            region_dtc = smtc_duty_cycle_get_next_free_time_ms( number_of_freq, freq_list );
+            region_dtc = smtc_duty_cycle_get_next_free_time_ms( stack_id, number_of_freq, freq_list );
 #if defined( ADD_RELAY_TX )
             int32_t relay_region_dtc = smtc_relay_tx_free_duty_cycle_ms_get( stack_id );
 
@@ -412,8 +411,14 @@ void modem_store_modem_context( uint8_t stack_id )
 {
     modem_ctx_t ctx = { 0 };
 
+    SMTC_MODEM_HAL_TRACE_WARNING( "Storing modem context for stack id: %d with reset counter %lu on offset %d \n", stack_id,
+				modem_ctx_light[stack_id].modem_reset_counter, stack_id * sizeof( ctx ) );
+
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
+
     // Restore current saved context
-    smtc_modem_hal_context_restore( CONTEXT_MODEM, stack_id * sizeof( ctx ), ( uint8_t* ) &ctx, sizeof( ctx ) );
+    smtc_modem_hal_context_restore( CONTEXT_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
 
     // Check if some values have changed
     if( ctx.reset_counter != modem_ctx_light[stack_id].modem_reset_counter )
@@ -421,26 +426,31 @@ void modem_store_modem_context( uint8_t stack_id )
         ctx.reset_counter = modem_ctx_light[stack_id].modem_reset_counter;
         ctx.crc           = crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) );
 
-        smtc_modem_hal_context_store( CONTEXT_MODEM, stack_id * sizeof( ctx ), ( uint8_t* ) &ctx, sizeof( ctx ) );
+        smtc_modem_hal_context_store( CONTEXT_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
         // dummy context reading to ensure context store is done before exiting the function
-        smtc_modem_hal_context_restore( CONTEXT_MODEM, stack_id * sizeof( ctx ), ( uint8_t* ) &ctx, sizeof( ctx ) );
+        smtc_modem_hal_context_restore( CONTEXT_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
     }
 }
 
 void modem_load_modem_context( uint8_t stack_id )
 {
     modem_ctx_t ctx = { 0 };
-    smtc_modem_hal_context_restore( CONTEXT_MODEM, stack_id * sizeof( ctx ), ( uint8_t* ) &ctx, sizeof( ctx ) );
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
+
+    smtc_modem_hal_context_restore( CONTEXT_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
 
     if( crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) ) != ctx.crc )
     {
         memset( &ctx, 0, sizeof( ctx ) );
         ctx.crc = crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) );
 
-        smtc_modem_hal_context_store( CONTEXT_MODEM, stack_id * sizeof( ctx ), ( uint8_t* ) &ctx, sizeof( ctx ) );
+        smtc_modem_hal_context_store( CONTEXT_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
         // dummy context reading to ensure context store is done before exiting the function
-        smtc_modem_hal_context_restore( CONTEXT_MODEM, stack_id * sizeof( ctx ), ( uint8_t* ) &ctx, sizeof( ctx ) );
+        smtc_modem_hal_context_restore( CONTEXT_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
     }
+
+    SMTC_MODEM_HAL_TRACE_WARNING( "Modem context for stack id: %d loaded with reset counter %lu\n", stack_id, ctx.reset_counter );
 
     modem_ctx_light[stack_id].modem_reset_counter = ctx.reset_counter;
 }
@@ -448,7 +458,9 @@ void modem_load_modem_context( uint8_t stack_id )
 void modem_reset_modem_context( uint8_t stack_id )
 {
     modem_ctx_t ctx = { 0 };
-    smtc_modem_hal_context_store( CONTEXT_MODEM, stack_id * sizeof( ctx ), ( uint8_t* ) &ctx, sizeof( ctx ) );
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
+    smtc_modem_hal_context_store( CONTEXT_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
 }
 
 uint32_t modem_get_reset_counter( uint8_t stack_id )
@@ -511,7 +523,7 @@ void modem_downlink_callback( lr1_stack_mac_down_data_t* rx_down_data )
     if( ( modem_ctx_light[rx_down_data->stack_id].report_all_downlinks_to_user == true ) ||
         ( ( downlink_used_by_services == 0 ) && ( rx_down_data->rx_metadata.rx_fport != 0 ) ) )
     {
-        if( fifo_ctrl_set( &modem_ctx_light[rx_down_data->stack_id].fifo_ctrl_obj, rx_down_data->rx_payload, rx_down_data->rx_payload_size, &metadata,
+        if( fifo_ctrl_set( rx_down_data->stack_id, &modem_ctx_light[rx_down_data->stack_id].fifo_ctrl_obj, rx_down_data->rx_payload, rx_down_data->rx_payload_size, &metadata,
                            sizeof( smtc_modem_dl_metadata_t ) ) != FIFO_STATUS_OK )
         {
             SMTC_MODEM_HAL_TRACE_PRINTF( "Fifo problem\n" );

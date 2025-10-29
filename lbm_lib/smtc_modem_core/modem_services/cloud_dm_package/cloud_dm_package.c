@@ -1406,7 +1406,7 @@ static bool dm_status_payload( cloud_dm_t* ctx, uint8_t stack_id, uint8_t* dm_up
                 break;
             case DM_INFO_CHARGE: {
                 uint32_t charge;
-                smtc_modem_get_charge( &charge );
+                smtc_modem_get_charge(stack_id, &charge );
                 *p_tmp         = charge & 0xFF;
                 *( p_tmp + 1 ) = ( charge >> 8 ) & 0xFF;
                 break;

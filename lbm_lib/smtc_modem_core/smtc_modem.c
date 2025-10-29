@@ -189,30 +189,12 @@ typedef struct modem_key_ctx_s
  */
 
 radio_planner_t modem_radio_planner[NUMBER_OF_STACKS];
-
 ralf_t modem_radio[NUMBER_OF_STACKS];
-
-// EvaTODO make macro implementation later
-#if defined( SX128X )
-modem_radio[0] = RALF_SX128X_INSTANTIATE( NULL );
-modem_radio[1] = RALF_SX128X_INSTANTIATE( NULL );
-#elif defined( SX126X )
-modem_radio[0] = RALF_SX126X_INSTANTIATE( NULL );
-modem_radio[1] = RALF_SX126X_INSTANTIATE( NULL );
-#elif defined( LR11XX )
-modem_radio[0] = RALF_LR11XX_INSTANTIATE( NULL );
-modem_radio[1] = RALF_LR11XX_INSTANTIATE( NULL );
-#elif defined( LR20XX )
-modem_radio[0] = RALF_LR20XX_INSTANTIATE( NULL );
-modem_radio[1] = RALF_LR20XX_INSTANTIATE( NULL );
-#elif defined( SX127X )
+#if defined( SX127X )
 #include "sx127x.h"
-static sx127x_t sx127x;
-modem_radio[0] = RALF_SX127X_INSTANTIATE( &sx127x );
-modem_radio[1] = RALF_SX127X_INSTANTIATE( &sx127x );
-#else
-#error "Please select radio board.."
+static sx127x_t sx127x[NUMBER_OF_STACKS];
 #endif
+
 
 struct
 {
@@ -247,8 +229,8 @@ void empty_callback( void* ctx )
 }
 
 #if defined( USE_LR11XX_CE )
-static void modem_store_key_context( void );
-static void modem_load_appkey_context( void );
+static void modem_store_key_context( uint8_t stack_id );
+static void modem_load_appkey_context( uint8_t stack_id );
 #endif
 
 /*
@@ -257,18 +239,30 @@ static void modem_load_appkey_context( void );
  */
 
 /* ------------ Modem Utilities ------------*/
-CONTINUE!!!!
 void smtc_modem_init_common( void ( *callback_event )( void ) )
 {
     SMTC_MODEM_HAL_TRACE_INFO( "Modem Common Initialization\n" );
 
+    for( uint8_t i = 0; i < NUMBER_OF_STACKS; i++ )
+    {
+#if defined( SX128X )
+        modem_radio[i] = (ralf_t)RALF_SX128X_INSTANTIATE( NULL );
+#elif defined( SX126X )
+	modem_radio[i] = (ralf_t)RALF_SX126X_INSTANTIATE( NULL );
+#elif defined( LR11XX )
+	modem_radio[i] = (ralf_t)RALF_LR11XX_INSTANTIATE( NULL );
+#elif defined( LR20XX )
+	modem_radio[i] = (ralf_t)RALF_LR20XX_INSTANTIATE( NULL );
+#elif defined( SX127X )
+	modem_radio[i] = (ralf_t)RALF_SX127X_INSTANTIATE( &sx127x[i] );
+#else
+#error "Please select radio board.."
+#endif
+    }
+
     modem_supervisor_init( );
     modem_context_init_common( callback_event );
-    modem_tx_protocol_manager_init( modem_radio_planner );
-    // If lr11xx crypto engine is used for crypto - EvaTODO look into this, not working now
-#if defined( USE_LR11XX_CE )
-    modem_load_appkey_context( );
-#endif
+    modem_tx_protocol_manager_init_common();
 }
 
 void smtc_modem_init( uint8_t stack_id )
@@ -293,10 +287,15 @@ void smtc_modem_init( uint8_t stack_id )
     // EvaTODO -revisit, for now only soft ce is implemented
     smtc_secure_element_init( stack_id );
     modem_context_init_light( stack_id, &modem_radio_planner[stack_id] );
+    //modem_tx_protocol_manager_init( stack_id, &modem_radio_planner[stack_id] );
 
+        // If lr11xx crypto engine is used for crypto - EvaTODO look into this, not working now
+#if defined( USE_LR11XX_CE )
+   // modem_load_appkey_context( stack_id );
+#endif
     // Is this going to work?
     // Event EVENT_RESET must be done at the end of init !!
-    increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_RESET, 0, stack_id );
+    //increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_RESET, 0, stack_id );
 
 }
 
@@ -487,7 +486,7 @@ smtc_modem_return_code_t smtc_modem_set_appkey( uint8_t stack_id, const uint8_t 
 #endif
 
             // Store appkey crc and status
-            modem_store_key_context( );
+            modem_store_key_context( stack_id );
         }
     }
 #endif
@@ -527,7 +526,7 @@ smtc_modem_return_code_t smtc_modem_set_nwkkey( uint8_t stack_id, const uint8_t 
         else
         {
             // Store appkey crc and status
-            modem_store_key_context( );
+            modem_store_key_context( stack_id );
         }
     }
 #endif
@@ -950,7 +949,7 @@ smtc_modem_return_code_t smtc_modem_get_downlink_data( uint8_t  buff[SMTC_MODEM_
 
     smtc_modem_return_code_t rc       = SMTC_MODEM_RC_OK;
     //EvaTODO support stack_id
-    fifo_ctrl_t*             fifo_obj = modem_context_get_fifo_obj( 0 );
+    fifo_ctrl_t*             fifo_obj = modem_context_get_fifo_obj( metadata->stack_id );
 
     // get_nb of data in fifo
     uint16_t nb_of_data = fifo_ctrl_get_nb_elt( fifo_obj );
@@ -964,7 +963,7 @@ smtc_modem_return_code_t smtc_modem_get_downlink_data( uint8_t  buff[SMTC_MODEM_
     {
         uint8_t  metadata_len;
         uint16_t fifo_buff_length = 0;
-        fifo_ctrl_get( fifo_obj, buff, &fifo_buff_length, SMTC_MODEM_MAX_LORAWAN_PAYLOAD_LENGTH, metadata,
+        fifo_ctrl_get( metadata->stack_id, fifo_obj, buff, &fifo_buff_length, SMTC_MODEM_MAX_LORAWAN_PAYLOAD_LENGTH, metadata,
                        &metadata_len, sizeof( smtc_modem_dl_metadata_t ) );
         // Length of LoRaWAN packet cannot exceed 242
         *length            = ( uint8_t ) fifo_buff_length;
@@ -977,7 +976,6 @@ smtc_modem_return_code_t smtc_modem_get_downlink_data( uint8_t  buff[SMTC_MODEM_
 
 smtc_modem_return_code_t smtc_modem_get_status( uint8_t stack_id, smtc_modem_status_mask_t* status_mask )
 {
-    UNUSED( stack_id );
     RETURN_BUSY_IF_TEST_MODE( );
     RETURN_INVALID_IF_NULL( status_mask );
 
@@ -1160,72 +1158,66 @@ smtc_modem_return_code_t smtc_modem_get_suspend_radio_communications( uint8_t st
     return SMTC_MODEM_RC_OK;
 }
 
-smtc_modem_return_code_t smtc_modem_suspend_radio_communications( bool suspend )
+smtc_modem_return_code_t smtc_modem_suspend_radio_communications( uint8_t stack_id, bool suspend )
 {
     RETURN_BUSY_IF_TEST_MODE( );
 
     bool local_rc = false;
-    for( uint8_t i = 0; i < NUMBER_OF_STACKS; i++ )
-    {
-        modem_supervisor_set_modem_is_suspended( suspend, i );
-    }
+
+    modem_supervisor_set_modem_is_suspended( suspend, stack_id );
 
     if( suspend == true )
     {
-        for( uint8_t i = 0; i < NUMBER_OF_STACKS; i++ )
-        {
-            smtc_modem_set_class( i, SMTC_MODEM_CLASS_A );
-            lorawan_api_core_abort( i );
-	    local_rc = modem_suspend_radio_access( i );
-            local_rc = modem_resume_radio_access( i );
-            local_rc = modem_suspend_radio_access( i );
-        }
+
+        smtc_modem_set_class( stack_id, SMTC_MODEM_CLASS_A );
+        lorawan_api_core_abort( stack_id );
+        local_rc = modem_suspend_radio_access( stack_id );
+        local_rc = modem_resume_radio_access( stack_id );
+        local_rc = modem_suspend_radio_access( stack_id );
         // First disable failsafe check for radio planner as the suspended task can be longer than failsafe value
-        rp_disable_failsafe( &modem_radio_planner, true );
+        rp_disable_failsafe( &modem_radio_planner[stack_id], true );
 
     }
     else
     {
-        for( uint8_t i = 0; i < NUMBER_OF_STACKS; i++ )
-        {
-	    local_rc = modem_resume_radio_access( i );
-	}
+
+        local_rc = modem_resume_radio_access( stack_id );
         // Re enable failsafe on radio planner
-        rp_disable_failsafe( &modem_radio_planner, false );
+        rp_disable_failsafe( &modem_radio_planner[stack_id], false );
     }
 
     return ( local_rc == true ) ? SMTC_MODEM_RC_OK : SMTC_MODEM_RC_FAIL;
 }
 
-smtc_modem_return_code_t smtc_modem_alarm_start_timer( uint32_t alarm_s )
+smtc_modem_return_code_t smtc_modem_alarm_start_timer( uint8_t stack_id, uint32_t alarm_s )
 {
     RETURN_BUSY_IF_TEST_MODE( );
     if( alarm_s > MODEM_MAX_ALARM_VALUE_S )
     {
         return SMTC_MODEM_RC_INVALID;
     }
-    modem_set_user_alarm( ( alarm_s > 0 ) ? ( smtc_modem_hal_get_time_in_s( ) + alarm_s ) : 0 );
+    modem_set_user_alarm( stack_id, ( alarm_s > 0 ) ? ( smtc_modem_hal_get_time_in_s( ) + alarm_s ) : 0 );
     return SMTC_MODEM_RC_OK;
 }
 
-smtc_modem_return_code_t smtc_modem_alarm_clear_timer( void )
+smtc_modem_return_code_t smtc_modem_alarm_clear_timer( uint8_t stack_id )
 {
     RETURN_BUSY_IF_TEST_MODE( );
 
     //EvaTODO stack_id
-    if( modem_get_user_alarm( 0 ) == 0 )
+    if( modem_get_user_alarm( stack_id ) == 0 )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "Alarm clear timer impossible: no alarm timer is currently running\n" )
         return SMTC_MODEM_RC_NOT_INIT;
     }
     else
     {
-        modem_set_user_alarm(0, 0 );
+        modem_set_user_alarm( stack_id, 0 );
         return SMTC_MODEM_RC_OK;
     }
 }
 
-smtc_modem_return_code_t smtc_modem_alarm_get_remaining_time( uint32_t* remaining_time_in_s )
+smtc_modem_return_code_t smtc_modem_alarm_get_remaining_time( uint8_t stack_id, uint32_t* remaining_time_in_s )
 {
     RETURN_BUSY_IF_TEST_MODE( );
     RETURN_INVALID_IF_NULL( remaining_time_in_s );
@@ -1238,7 +1230,7 @@ smtc_modem_return_code_t smtc_modem_alarm_get_remaining_time( uint32_t* remainin
     }
     else
     {
-        int32_t abs_remaining_time = ( int32_t ) ( modem_get_user_alarm( 0) - smtc_modem_hal_get_time_in_s( ) );
+        int32_t abs_remaining_time = ( int32_t ) ( modem_get_user_alarm( stack_id ) - smtc_modem_hal_get_time_in_s( ) );
 
         *remaining_time_in_s = ( abs_remaining_time > 0 ) ? ( abs_remaining_time ) : 0;
         return SMTC_MODEM_RC_OK;
@@ -1277,7 +1269,7 @@ smtc_modem_return_code_t smtc_modem_get_pin( uint8_t stack_id, uint8_t chip_pin[
     // and shall be updated once more. Corrupt the key crc so that update is possible
     modem_appkey_status     = MODEM_KEY_CRC_STATUS_INVALID;
     modem_gen_appkey_status = MODEM_KEY_CRC_STATUS_INVALID;
-    modem_store_key_context( );
+    modem_store_key_context( stack_id );
 
     if( status != LR11XX_STATUS_OK )
     {
@@ -1330,7 +1322,7 @@ smtc_modem_return_code_t smtc_modem_derive_keys( uint8_t stack_id )
     // and shall be updated once more. Corrupt the key crc so that update is possible
     modem_appkey_status     = MODEM_KEY_CRC_STATUS_INVALID;
     modem_gen_appkey_status = MODEM_KEY_CRC_STATUS_INVALID;
-    modem_store_key_context( );
+    modem_store_key_context( stack_id );
 
     if( status != LR11XX_STATUS_OK )
     {
@@ -1561,16 +1553,16 @@ smtc_modem_return_code_t smtc_modem_csma_get_parameters( uint8_t stack_id, uint8
 }
 #endif  // ADD_CSMA
 
-smtc_modem_return_code_t smtc_modem_get_charge( uint32_t* charge_mah )
+smtc_modem_return_code_t smtc_modem_get_charge( uint8_t stack_id, uint32_t* charge_mah )
 {
     RETURN_INVALID_IF_NULL( charge_mah );
 
-    *charge_mah = rp_stats_get_charge_mah( &modem_radio_planner.stats );
+    *charge_mah = rp_stats_get_charge_mah( &modem_radio_planner[stack_id].stats );
 
     return SMTC_MODEM_RC_OK;
 }
 
-smtc_modem_return_code_t smtc_modem_get_rp_stats_to_array( uint8_t* stats_array, uint16_t* stats_array_length )
+smtc_modem_return_code_t smtc_modem_get_rp_stats_to_array( uint8_t stack_id, uint8_t* stats_array, uint16_t* stats_array_length )
 {
     RETURN_INVALID_IF_NULL( stats_array );
     RETURN_INVALID_IF_NULL( stats_array_length );
@@ -1579,45 +1571,45 @@ smtc_modem_return_code_t smtc_modem_get_rp_stats_to_array( uint8_t* stats_array,
 
     for( uint8_t i = 0; i < RP_NB_HOOKS; i++ )
     {
-        stats_array[*stats_array_length + 0] = ( modem_radio_planner.stats.tx_last_toa_ms[i] >> 24 ) & 0xFF;
-        stats_array[*stats_array_length + 1] = ( modem_radio_planner.stats.tx_last_toa_ms[i] >> 16 ) & 0xFF;
-        stats_array[*stats_array_length + 2] = ( modem_radio_planner.stats.tx_last_toa_ms[i] >> 8 ) & 0xFF;
-        stats_array[*stats_array_length + 3] = ( modem_radio_planner.stats.tx_last_toa_ms[i] & 0xFF );
+        stats_array[*stats_array_length + 0] = ( modem_radio_planner[stack_id].stats.tx_last_toa_ms[i] >> 24 ) & 0xFF;
+        stats_array[*stats_array_length + 1] = ( modem_radio_planner[stack_id].stats.tx_last_toa_ms[i] >> 16 ) & 0xFF;
+        stats_array[*stats_array_length + 2] = ( modem_radio_planner[stack_id].stats.tx_last_toa_ms[i] >> 8 ) & 0xFF;
+        stats_array[*stats_array_length + 3] = ( modem_radio_planner[stack_id].stats.tx_last_toa_ms[i] & 0xFF );
 
-        stats_array[*stats_array_length + 4] = ( modem_radio_planner.stats.rx_last_toa_ms[i] >> 24 ) & 0xFF;
-        stats_array[*stats_array_length + 5] = ( modem_radio_planner.stats.rx_last_toa_ms[i] >> 16 ) & 0xFF;
-        stats_array[*stats_array_length + 6] = ( modem_radio_planner.stats.rx_last_toa_ms[i] >> 8 ) & 0xFF;
-        stats_array[*stats_array_length + 7] = ( modem_radio_planner.stats.rx_last_toa_ms[i] & 0xFF );
+        stats_array[*stats_array_length + 4] = ( modem_radio_planner[stack_id].stats.rx_last_toa_ms[i] >> 24 ) & 0xFF;
+        stats_array[*stats_array_length + 5] = ( modem_radio_planner[stack_id].stats.rx_last_toa_ms[i] >> 16 ) & 0xFF;
+        stats_array[*stats_array_length + 6] = ( modem_radio_planner[stack_id].stats.rx_last_toa_ms[i] >> 8 ) & 0xFF;
+        stats_array[*stats_array_length + 7] = ( modem_radio_planner[stack_id].stats.rx_last_toa_ms[i] & 0xFF );
 
-        stats_array[*stats_array_length + 8]  = ( modem_radio_planner.stats.tx_consumption_ms[i] >> 24 ) & 0xFF;
-        stats_array[*stats_array_length + 9]  = ( modem_radio_planner.stats.tx_consumption_ms[i] >> 16 ) & 0xFF;
-        stats_array[*stats_array_length + 10] = ( modem_radio_planner.stats.tx_consumption_ms[i] >> 8 ) & 0xFF;
-        stats_array[*stats_array_length + 11] = ( modem_radio_planner.stats.tx_consumption_ms[i] & 0xFF );
+        stats_array[*stats_array_length + 8]  = ( modem_radio_planner[stack_id].stats.tx_consumption_ms[i] >> 24 ) & 0xFF;
+        stats_array[*stats_array_length + 9]  = ( modem_radio_planner[stack_id].stats.tx_consumption_ms[i] >> 16 ) & 0xFF;
+        stats_array[*stats_array_length + 10] = ( modem_radio_planner[stack_id].stats.tx_consumption_ms[i] >> 8 ) & 0xFF;
+        stats_array[*stats_array_length + 11] = ( modem_radio_planner[stack_id].stats.tx_consumption_ms[i] & 0xFF );
 
-        stats_array[*stats_array_length + 12] = ( modem_radio_planner.stats.rx_consumption_ms[i] >> 24 ) & 0xFF;
-        stats_array[*stats_array_length + 13] = ( modem_radio_planner.stats.rx_consumption_ms[i] >> 16 ) & 0xFF;
-        stats_array[*stats_array_length + 14] = ( modem_radio_planner.stats.rx_consumption_ms[i] >> 8 ) & 0xFF;
-        stats_array[*stats_array_length + 15] = ( modem_radio_planner.stats.rx_consumption_ms[i] & 0xFF );
+        stats_array[*stats_array_length + 12] = ( modem_radio_planner[stack_id].stats.rx_consumption_ms[i] >> 24 ) & 0xFF;
+        stats_array[*stats_array_length + 13] = ( modem_radio_planner[stack_id].stats.rx_consumption_ms[i] >> 16 ) & 0xFF;
+        stats_array[*stats_array_length + 14] = ( modem_radio_planner[stack_id].stats.rx_consumption_ms[i] >> 8 ) & 0xFF;
+        stats_array[*stats_array_length + 15] = ( modem_radio_planner[stack_id].stats.rx_consumption_ms[i] & 0xFF );
 
-        stats_array[*stats_array_length + 16] = ( modem_radio_planner.stats.none_consumption_ms[i] >> 24 ) & 0xFF;
-        stats_array[*stats_array_length + 17] = ( modem_radio_planner.stats.none_consumption_ms[i] >> 16 ) & 0xFF;
-        stats_array[*stats_array_length + 18] = ( modem_radio_planner.stats.none_consumption_ms[i] >> 8 ) & 0xFF;
-        stats_array[*stats_array_length + 19] = ( modem_radio_planner.stats.none_consumption_ms[i] & 0xFF );
+        stats_array[*stats_array_length + 16] = ( modem_radio_planner[stack_id].stats.none_consumption_ms[i] >> 24 ) & 0xFF;
+        stats_array[*stats_array_length + 17] = ( modem_radio_planner[stack_id].stats.none_consumption_ms[i] >> 16 ) & 0xFF;
+        stats_array[*stats_array_length + 18] = ( modem_radio_planner[stack_id].stats.none_consumption_ms[i] >> 8 ) & 0xFF;
+        stats_array[*stats_array_length + 19] = ( modem_radio_planner[stack_id].stats.none_consumption_ms[i] & 0xFF );
 
-        stats_array[*stats_array_length + 20] = ( modem_radio_planner.stats.tx_consumption_ma[i] >> 24 ) & 0xFF;
-        stats_array[*stats_array_length + 21] = ( modem_radio_planner.stats.tx_consumption_ma[i] >> 16 ) & 0xFF;
-        stats_array[*stats_array_length + 22] = ( modem_radio_planner.stats.tx_consumption_ma[i] >> 8 ) & 0xFF;
-        stats_array[*stats_array_length + 23] = ( modem_radio_planner.stats.tx_consumption_ma[i] & 0xFF );
+        stats_array[*stats_array_length + 20] = ( modem_radio_planner[stack_id].stats.tx_consumption_ma[i] >> 24 ) & 0xFF;
+        stats_array[*stats_array_length + 21] = ( modem_radio_planner[stack_id].stats.tx_consumption_ma[i] >> 16 ) & 0xFF;
+        stats_array[*stats_array_length + 22] = ( modem_radio_planner[stack_id].stats.tx_consumption_ma[i] >> 8 ) & 0xFF;
+        stats_array[*stats_array_length + 23] = ( modem_radio_planner[stack_id].stats.tx_consumption_ma[i] & 0xFF );
 
-        stats_array[*stats_array_length + 24] = ( modem_radio_planner.stats.rx_consumption_ma[i] >> 24 ) & 0xFF;
-        stats_array[*stats_array_length + 25] = ( modem_radio_planner.stats.rx_consumption_ma[i] >> 16 ) & 0xFF;
-        stats_array[*stats_array_length + 26] = ( modem_radio_planner.stats.rx_consumption_ma[i] >> 8 ) & 0xFF;
-        stats_array[*stats_array_length + 27] = ( modem_radio_planner.stats.rx_consumption_ma[i] & 0xFF );
+        stats_array[*stats_array_length + 24] = ( modem_radio_planner[stack_id].stats.rx_consumption_ma[i] >> 24 ) & 0xFF;
+        stats_array[*stats_array_length + 25] = ( modem_radio_planner[stack_id].stats.rx_consumption_ma[i] >> 16 ) & 0xFF;
+        stats_array[*stats_array_length + 26] = ( modem_radio_planner[stack_id].stats.rx_consumption_ma[i] >> 8 ) & 0xFF;
+        stats_array[*stats_array_length + 27] = ( modem_radio_planner[stack_id].stats.rx_consumption_ma[i] & 0xFF );
 
-        stats_array[*stats_array_length + 28] = ( modem_radio_planner.stats.none_consumption_ma[i] >> 24 ) & 0xFF;
-        stats_array[*stats_array_length + 29] = ( modem_radio_planner.stats.none_consumption_ma[i] >> 16 ) & 0xFF;
-        stats_array[*stats_array_length + 30] = ( modem_radio_planner.stats.none_consumption_ma[i] >> 8 ) & 0xFF;
-        stats_array[*stats_array_length + 31] = ( modem_radio_planner.stats.none_consumption_ma[i] & 0xFF );
+        stats_array[*stats_array_length + 28] = ( modem_radio_planner[stack_id].stats.none_consumption_ma[i] >> 24 ) & 0xFF;
+        stats_array[*stats_array_length + 29] = ( modem_radio_planner[stack_id].stats.none_consumption_ma[i] >> 16 ) & 0xFF;
+        stats_array[*stats_array_length + 30] = ( modem_radio_planner[stack_id].stats.none_consumption_ma[i] >> 8 ) & 0xFF;
+        stats_array[*stats_array_length + 31] = ( modem_radio_planner[stack_id].stats.none_consumption_ma[i] & 0xFF );
 
         *stats_array_length += 32;
     }
@@ -1625,9 +1617,9 @@ smtc_modem_return_code_t smtc_modem_get_rp_stats_to_array( uint8_t* stats_array,
     return SMTC_MODEM_RC_OK;
 }
 
-smtc_modem_return_code_t smtc_modem_reset_charge( void )
+smtc_modem_return_code_t smtc_modem_reset_charge( uint8_t stack_id )
 {
-    rp_stats_init( &modem_radio_planner.stats );
+    rp_stats_init( &modem_radio_planner[stack_id].stats );
     return SMTC_MODEM_RC_OK;
 }
 
@@ -2478,11 +2470,11 @@ void smtc_modem_wifi_set_payload_format( uint8_t stack_id, smtc_modem_wifi_paylo
  * ---------------------- DEBUG PURPOSE FUNCTIONS  -----------------------------
  */
 
-smtc_modem_return_code_t smtc_modem_debug_set_duty_cycle_state( bool enable )
+smtc_modem_return_code_t smtc_modem_debug_set_duty_cycle_state( uint8_t stack_id, bool enable )
 {
     RETURN_BUSY_IF_TEST_MODE( );
 
-    if( smtc_duty_cycle_enable_set( ( enable == false ) ? SMTC_DTC_FULL_DISABLED : SMTC_DTC_ENABLED ) != SMTC_DTC_OK )
+    if( smtc_duty_cycle_enable_set( stack_id, ( enable == false ) ? SMTC_DTC_FULL_DISABLED : SMTC_DTC_ENABLED ) != SMTC_DTC_OK )
     {
         return SMTC_MODEM_RC_FAIL;
     }
@@ -2997,12 +2989,15 @@ static smtc_modem_return_code_t smtc_modem_custom_dr_distribution_to_tab(
 }
 
 #if defined( USE_LR11XX_CE )
-static void modem_store_key_context( void )
+static void modem_store_key_context( uint8_t stack_id )
 {
     modem_key_ctx_t ctx = { 0 };
 
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
+
     // Restore current saved context
-    smtc_modem_hal_context_restore( CONTEXT_KEY_MODEM, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+    smtc_modem_hal_context_restore( CONTEXT_KEY_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
 
     // Check if some values have changed
     if( ( ctx.appkey_crc != modem_appkey_crc ) || ( ctx.appkey_crc_status != modem_appkey_status ) ||
@@ -3015,16 +3010,18 @@ static void modem_store_key_context( void )
         memcpy( ctx.data_block_int_key, modem_data_block_int_key, SMTC_MODEM_KEY_LENGTH );
         ctx.crc = crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) );
 
-        smtc_modem_hal_context_store( CONTEXT_KEY_MODEM, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+        smtc_modem_hal_context_store( CONTEXT_KEY_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
         // dummy context reading to ensure context store is done before exiting the function
-        smtc_modem_hal_context_restore( CONTEXT_KEY_MODEM, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+        smtc_modem_hal_context_restore( CONTEXT_KEY_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
     }
 }
 
-static void modem_load_appkey_context( void )
+static void modem_load_appkey_context( uint8_t stack_id )
 {
     modem_key_ctx_t ctx;
-    smtc_modem_hal_context_restore( CONTEXT_KEY_MODEM, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
+    smtc_modem_hal_context_restore( CONTEXT_KEY_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
 
     if( crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) ) == ctx.crc )
     {
@@ -3043,9 +3040,9 @@ static void modem_load_appkey_context( void )
         ctx.gen_appkey_crc_status = MODEM_KEY_CRC_STATUS_INVALID;
 
         ctx.crc = crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) );
-        smtc_modem_hal_context_store( CONTEXT_KEY_MODEM, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+        smtc_modem_hal_context_store( CONTEXT_KEY_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
         // dummy context reading to ensure context store is done before exiting the function
-        smtc_modem_hal_context_restore( CONTEXT_KEY_MODEM, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+        smtc_modem_hal_context_restore( CONTEXT_KEY_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
     }
 }
 #endif

@@ -166,28 +166,36 @@ void smtc_modem_hal_set_offset_to_test_wrapping( const uint32_t offset_to_test_w
 /**
  * @brief Starts the provided timer objet for the given time
  *
+ * @param [in] stack_id    Stack identifier
  * @param [in] milliseconds Number of milliseconds (timer value)
  * @param [in] callback     Callback that will be called in case of timer irq
  * @param [in] context      Context that will be passed on callback argument
  */
-void smtc_modem_hal_start_timer( const uint32_t milliseconds, void ( *callback )( void* context ), void* context );
+void smtc_modem_hal_start_timer( uint8_t stack_id, const uint32_t milliseconds, void ( *callback )( void* context ), void* context );
 
 /**
+ *
  * @brief Stop the provided timer
+ *
+ * @param [in] stack_id    Stack identifier
  */
-void smtc_modem_hal_stop_timer( void );
+void smtc_modem_hal_stop_timer( uint8_t stack_id );
 
 /* ------------ IRQ management ------------*/
 
 /**
  * @brief Disables interruptions used in Modem (radio_dio and timer)
+ *
+ * @param [in] stack_id    Stack identifier
  */
-void smtc_modem_hal_disable_modem_irq( void );
+void smtc_modem_hal_disable_modem_irq( uint8_t stack_id );
 
 /**
  * @brief Enables interruptions used in Modem (radio_dio and timer)
+ *
+ * @param [in] stack_id    Stack identifier
  */
-void smtc_modem_hal_enable_modem_irq( void );
+void smtc_modem_hal_enable_modem_irq( uint8_t stack_id );
 
 /* ------------ Context saving management ------------*/
 
@@ -275,7 +283,7 @@ void smtc_modem_hal_irq_config_radio_irq( uint8_t stack_id, void ( *callback )( 
  *
  * @return bool False if the radio is free, false otherwise
  */
-bool smtc_modem_external_stack_currently_use_radio( void );
+bool smtc_modem_external_stack_currently_use_radio( uint8_t stack_id );
 /**
  * @brief Start radio tcxo
  *
@@ -297,7 +305,7 @@ void smtc_modem_hal_stop_radio_tcxo( void );
  *
  * @return uint32_t TCXO startup delay in ms
  */
-uint32_t smtc_modem_hal_get_radio_tcxo_startup_delay_ms( void );
+uint32_t smtc_modem_hal_get_radio_tcxo_startup_delay_ms( uint8_t stack_id );
 
 /**
  * @brief Set antenna switch for Tx operation or not.
@@ -325,9 +333,11 @@ uint8_t smtc_modem_hal_get_battery_level( void );
 /**
  * @brief Return board wake up delay in ms
  *
+ * @param [in] stack_id Stack identifier
+ *
  * @return uint8_t Board wake up delay in ms
  */
-int8_t smtc_modem_hal_get_board_delay_ms( void );
+int8_t smtc_modem_hal_get_board_delay_ms( uint8_t stack_id );
 
 /* ------------ Trace management ------------*/
 

@@ -178,25 +178,25 @@ void region_ru_864_config( smtc_real_t* real )
     memset( &unwrapped_channel_mask[0], 0xFF, BANK_MAX_RU864 );
 }
 
-status_lorawan_t region_ru_864_get_join_next_channel( smtc_real_t* real, uint8_t tx_data_rate,
+status_lorawan_t region_ru_864_get_join_next_channel( uint8_t stack_id, smtc_real_t* real, uint8_t tx_data_rate,
                                                       uint32_t* out_tx_frequency, uint32_t* out_rx1_frequency,
                                                       uint8_t* active_channel_nb )
 {
-    return region_ru_864_get_next_channel( real, tx_data_rate, out_tx_frequency, out_rx1_frequency, active_channel_nb );
+    return region_ru_864_get_next_channel( stack_id, real, tx_data_rate, out_tx_frequency, out_rx1_frequency, active_channel_nb );
 }
 
-status_lorawan_t region_ru_864_get_next_channel( smtc_real_t* real, uint8_t tx_data_rate, uint32_t* out_tx_frequency,
+status_lorawan_t region_ru_864_get_next_channel( uint8_t stack_id, smtc_real_t* real, uint8_t tx_data_rate, uint32_t* out_tx_frequency,
                                                  uint32_t* out_rx1_frequency, uint8_t* active_channel_nb )
 {
     *active_channel_nb = 0;
     uint8_t active_channel_index[NUMBER_OF_CHANNEL_RU_864];
 
-    smtc_duty_cycle_update( );
+    smtc_duty_cycle_update( stack_id);
     for( uint8_t i = 0; i < real_const.const_number_of_tx_channel; i++ )
     {
         if( SMTC_GET_BIT8( channel_index_enabled, i ) == CHANNEL_ENABLED )
         {
-            if( ( smtc_duty_cycle_is_channel_free( tx_frequency_channel[i] ) == true ) &&
+            if( ( smtc_duty_cycle_is_channel_free( stack_id,  tx_frequency_channel[i] ) == true ) &&
                 ( SMTC_GET_BIT16( &dr_bitfield_tx_channel[i], tx_data_rate ) == 1 ) )
             {
                 active_channel_index[*active_channel_nb] = i;

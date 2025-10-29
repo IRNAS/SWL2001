@@ -416,7 +416,7 @@ void smtc_ping_slot_start( smtc_ping_slot_t* ping_slot_obj )
         rp_task.state                      = RP_TASK_STATE_SCHEDULE;
         rp_task.schedule_task_low_priority = true;
         int8_t board_delay_ms =
-            smtc_modem_hal_get_radio_tcxo_startup_delay_ms( ) + smtc_modem_hal_get_board_delay_ms( );
+            smtc_modem_hal_get_radio_tcxo_startup_delay_ms( ping_slot_obj->lr1_mac->stack_id ) + smtc_modem_hal_get_board_delay_ms( ping_slot_obj->lr1_mac->stack_id );
         smtc_real_get_rx_start_time_offset_ms( ping_slot_obj->lr1_mac->real, RX_SESSION_PARAM_CURRENT->rx_data_rate,
                                                board_delay_ms, RX_SESSION_PARAM_CURRENT->rx_window_symb,
                                                &rx_offset_ms_tmp );

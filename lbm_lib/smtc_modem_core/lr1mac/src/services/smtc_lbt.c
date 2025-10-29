@@ -187,7 +187,7 @@ void smtc_lbt_listen_channel( smtc_lbt_t* lbt_obj, uint32_t freq, bool is_at_tim
     if( is_at_time == true )
     {
         rp_task.start_time_ms =
-            target_time_ms - lbt_obj->listen_duration_ms - smtc_modem_hal_get_radio_tcxo_startup_delay_ms( );
+            target_time_ms - lbt_obj->listen_duration_ms - smtc_modem_hal_get_radio_tcxo_startup_delay_ms( lbt_obj->rp->stack_id );
         rp_task.state = RP_TASK_STATE_SCHEDULE;
     }
     else

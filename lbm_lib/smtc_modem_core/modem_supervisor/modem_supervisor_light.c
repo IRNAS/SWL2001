@@ -132,7 +132,7 @@ struct
  * --- PRIVATE FUNCTIONS DECLARATION -------------------------------------------
  */
 
-static uint32_t supervisor_check_user_alarm( void );
+static uint32_t supervisor_check_user_alarm( uint8_t stack_id );
 static uint32_t supervisor_run_lorawan_engine( uint8_t stack_id );
 static uint32_t supervisor_find_next_task( void );
 
@@ -264,7 +264,7 @@ uint32_t modem_supervisor_engine( void )
     uint32_t sleep_time       = 0;
     uint32_t sleep_time_alarm = 0;
     sleep_time                = tx_protocol_manager_is_busy( );
-    sleep_time_alarm          = supervisor_check_user_alarm( );
+    sleep_time_alarm          = supervisor_check_user_alarm( STACK_ID_CURRENT_TASK );
     if( sleep_time > 0 )
     {
         sleep_time = MIN( sleep_time, sleep_time_alarm * 1000 );
@@ -347,10 +347,9 @@ void modem_supervisor_set_modem_mute_with_priority_parameter( task_priority_t pr
  * --- PRIVATE FUNCTIONS DEFINITION --------------------------------------------
  */
 
-static uint32_t supervisor_check_user_alarm( void )
+static uint32_t supervisor_check_user_alarm( uint8_t stack_id )
 {
-    // EvaTODO stack_id
-    uint32_t alarm                 = modem_get_user_alarm( 0 );
+    uint32_t alarm                 = modem_get_user_alarm( stack_id );
     int32_t  user_alarm_in_seconds = MODEM_MAX_ALARM_S;
     // manage the user alarm
     if( alarm != 0 )
@@ -359,7 +358,7 @@ static uint32_t supervisor_check_user_alarm( void )
 
         if( user_alarm_in_seconds <= 0 )
         {
-            modem_set_user_alarm( 0 );
+            modem_set_user_alarm( stack_id, 0 );
             user_alarm_in_seconds = MODEM_MAX_ALARM_S;
             increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_ALARM, 0, 0xFF );
         }

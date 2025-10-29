@@ -694,7 +694,7 @@ static void rp_task_arbiter( radio_planner_t* rp, const char* caller_func_name )
 
                     rp_consumption_statistics_updated( rp, rp->radio_task_id, smtc_modem_hal_get_time_in_ms( ) );
                     rp->radio_task_id = rp->priority_task.hook_id;
-                    if( smtc_modem_external_stack_currently_use_radio( ) == true )
+                    if( smtc_modem_external_stack_currently_use_radio( rp->stack_id ) == true )
                     {
                         rp->tasks[rp->radio_task_id].state = RP_TASK_STATE_ABORTED;
                     }
@@ -708,7 +708,7 @@ static void rp_task_arbiter( radio_planner_t* rp, const char* caller_func_name )
             else
             {  // Radio is sleeping start priority task on radio
                 rp->radio_task_id = rp->priority_task.hook_id;
-                if( smtc_modem_external_stack_currently_use_radio( ) == true )
+                if( smtc_modem_external_stack_currently_use_radio( rp->stack_id ) == true )
                 {
                     rp->tasks[rp->radio_task_id].state = RP_TASK_STATE_ABORTED;
                 }
@@ -1085,8 +1085,8 @@ rp_hook_status_t rp_get_pkt_payload( radio_planner_t* rp, const rp_task_t* task 
 
 static void rp_set_alarm( radio_planner_t* rp, const uint32_t alarm_in_ms )
 {
-    smtc_modem_hal_stop_timer( );
-    smtc_modem_hal_start_timer( alarm_in_ms, rp_timer_irq_callback, rp );
+    smtc_modem_hal_stop_timer( rp->stack_id );
+    smtc_modem_hal_start_timer( rp->stack_id, alarm_in_ms, rp_timer_irq_callback, rp );
 }
 
 static void rp_timer_irq( radio_planner_t* rp )
@@ -1229,7 +1229,7 @@ static void rp_consumption_statistics_updated( radio_planner_t* rp, const uint8_
         rp_stats_update( &rp->stats, time, hook_id, micro_ampere_radio );
         if( tx_timestamp_tmp != 0 )
         {
-            smtc_duty_cycle_sum( tx_freq_hz, rp->stats.tx_last_toa_ms[hook_id] );
+            smtc_duty_cycle_sum( rp->stack_id, tx_freq_hz, rp->stats.tx_last_toa_ms[hook_id] );
         }
     }
 }
@@ -1245,6 +1245,7 @@ void rp_radio_irq_callback( void* obj )
     rp->radio_irq_flag                      = true;
     rp->irq_timestamp_ms[rp->radio_task_id] = smtc_modem_hal_get_time_in_ms( );
     smtc_modem_hal_user_lbm_irq( );
+    SMTC_MODEM_HAL_TRACE_WARNING( "RP: Radio IRQ callback called on stack %d\n", rp->stack_id );
 }
 
 static void rp_timer_irq_callback( void* obj )

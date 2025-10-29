@@ -330,7 +330,7 @@ void wor_ral_init_rx_wor( smtc_real_t* real, uint8_t dr, uint32_t freq_hz, wor_c
     }
 }
 
-void wor_ral_init_cad( const ralf_t* radio, smtc_real_t* real, uint8_t dr, wor_cad_periodicity_t cad_period,
+void wor_ral_init_cad( uint8_t stack_id, const ralf_t* radio, smtc_real_t* real, uint8_t dr, wor_cad_periodicity_t cad_period,
                        bool is_first, uint32_t wor_toa_ms, ral_lora_cad_params_t* param )
 {
     uint8_t            sf;
@@ -344,7 +344,7 @@ void wor_ral_init_cad( const ralf_t* radio, smtc_real_t* real, uint8_t dr, wor_c
 
     if( is_first == true )
     {
-        if( smtc_modem_hal_get_radio_tcxo_startup_delay_ms( ) <= 1 )
+        if( smtc_modem_hal_get_radio_tcxo_startup_delay_ms( stack_id) <= 1 )
         {
             param->cad_exit_mode = RAL_LORA_CAD_ONLY;
             param->cad_symb_nb   = RAL_LORA_CAD_01_SYMB;
@@ -380,7 +380,7 @@ void wor_ral_init_cad( const ralf_t* radio, smtc_real_t* real, uint8_t dr, wor_c
                                                                 &( param->cad_det_peak_in_symb ) ) == RAL_STATUS_OK );
 }
 
-void wor_ral_init_rx_msg( smtc_real_t* real, uint8_t max_payload, uint8_t dr, uint32_t freq_hz,
+void wor_ral_init_rx_msg( uint8_t stack_id, smtc_real_t* real, uint8_t max_payload, uint8_t dr, uint32_t freq_hz,
                           rp_radio_params_t* param )
 {
     modulation_type_t modulation_type = smtc_real_get_modulation_type_from_datarate( real, dr );
@@ -402,7 +402,7 @@ void wor_ral_init_rx_msg( smtc_real_t* real, uint8_t max_payload, uint8_t dr, ui
         else
         {
             lora->sync_word       = smtc_real_get_sync_word( real );
-            lora->symb_nb_timeout = 10 + 1000 * smtc_modem_hal_get_radio_tcxo_startup_delay_ms( ) / symb_time_us;
+            lora->symb_nb_timeout = 10 + 1000 * smtc_modem_hal_get_radio_tcxo_startup_delay_ms( stack_id ) / symb_time_us;
             lora->rf_freq_in_hz   = freq_hz;
 
             lora->pkt_params.pld_len_in_bytes = max_payload;

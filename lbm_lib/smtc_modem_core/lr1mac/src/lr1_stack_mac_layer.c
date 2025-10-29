@@ -515,7 +515,7 @@ void lr1_stack_mac_tx_radio_start( lr1_stack_mac_t* lr1_mac )
     rp_task.start_time_ms    = lr1_mac->rtc_target_timer_ms;
     if( lr1_mac->send_at_time == true )
     {
-        rp_task.start_time_ms -= smtc_modem_hal_get_radio_tcxo_startup_delay_ms( );
+        rp_task.start_time_ms -= smtc_modem_hal_get_radio_tcxo_startup_delay_ms( lr1_mac->stack_id );
         lr1_mac->send_at_time = false;  // reinit the flag
         rp_task.state         = RP_TASK_STATE_SCHEDULE;
     }
@@ -751,8 +751,8 @@ void lr1_stack_mac_rp_callback( lr1_stack_mac_t* lr1_mac )
                                   ( lr1_mac->isr_tx_done_radio_timestamp + rx_delay_ms +
                                     lr1_mac->rx_timeout_symb_in_ms + lr1_mac->rx_offset_ms ) -
                                   lr1_mac->fine_tune_board_setting_delay_ms[lr1_mac->rx_data_rate] -
-                                  smtc_modem_hal_get_radio_tcxo_startup_delay_ms( ) -
-                                  smtc_modem_hal_get_board_delay_ms( );
+                                  smtc_modem_hal_get_radio_tcxo_startup_delay_ms( lr1_mac->stack_id ) -
+                                  smtc_modem_hal_get_board_delay_ms( lr1_mac->stack_id );
 
         SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG(
             "DR%u Fine tune correction (ms) = %d, error fine tune (ms) = %d, lr1_mac->rx_offset_ms = %d\n",
@@ -864,8 +864,8 @@ bool lr1_stack_mac_rx_timer_configure( lr1_stack_mac_t* lr1_mac, const rx_win_ty
             SMTC_MODEM_HAL_PANIC( "MODULATION NOT SUPPORTED\n" );
         }
 
-        uint32_t board_delay_ms = smtc_modem_hal_get_radio_tcxo_startup_delay_ms( ) +
-                                  +smtc_modem_hal_get_board_delay_ms( ) +
+        uint32_t board_delay_ms = smtc_modem_hal_get_radio_tcxo_startup_delay_ms( lr1_mac->stack_id ) +
+                                  +smtc_modem_hal_get_board_delay_ms( lr1_mac->stack_id ) +
                                   lr1_mac->fine_tune_board_setting_delay_ms[lr1_mac->rx_data_rate];
 
 #if defined( ADD_RELAY_TX )

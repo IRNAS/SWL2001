@@ -727,6 +727,8 @@ smtc_se_return_code_t smtc_secure_element_get_pin( uint8_t pin[SMTC_SE_PIN_SIZE]
 smtc_se_return_code_t smtc_secure_element_store_context( uint8_t stack_id )
 {
     soft_se_context_nvm_t ctx = { 0 };
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
 
     soft_se_data_t* data_current_ctx = &soft_se_data[stack_id];
 
@@ -736,7 +738,7 @@ smtc_se_return_code_t smtc_secure_element_store_context( uint8_t stack_id )
     ctx.crc = soft_ce_crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) );
 
     // Store the current context related to stack_id
-    smtc_modem_hal_context_store( CONTEXT_SECURE_ELEMENT, stack_id * sizeof( ctx ), ( uint8_t* ) &ctx, sizeof( ctx ) );
+    smtc_modem_hal_context_store( CONTEXT_SECURE_ELEMENT, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
     smtc_secure_element_restore_context( stack_id );
     return SMTC_SE_RC_SUCCESS;
 }
@@ -744,7 +746,9 @@ smtc_se_return_code_t smtc_secure_element_store_context( uint8_t stack_id )
 smtc_se_return_code_t smtc_secure_element_restore_context( uint8_t stack_id )
 {
     soft_se_context_nvm_t ctx = { 0 };
-    smtc_modem_hal_context_restore( CONTEXT_SECURE_ELEMENT, stack_id * sizeof( ctx ), ( uint8_t* ) &ctx,
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
+    smtc_modem_hal_context_restore( CONTEXT_SECURE_ELEMENT, stack_id * real_size, ( uint8_t* ) &ctx,
                                     sizeof( ctx ) );
 
     soft_se_data_t* data_ctx = &soft_se_data[stack_id];

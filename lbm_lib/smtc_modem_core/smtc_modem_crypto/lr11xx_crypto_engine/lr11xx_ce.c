@@ -152,7 +152,7 @@ smtc_se_return_code_t smtc_secure_element_init( uint8_t stack_id )
     lr11xx_crypto_status_t lr11xx_crypto_status = LR11XX_CRYPTO_STATUS_ERROR;
 
     // Initialize data structure to 0
-    memset( &lr11xx_ce_data, 0, sizeof( lr11xx_ce_data_t ) );
+    memset( &lr11xx_ce_data[stack_id], 0, sizeof( lr11xx_ce_data_t ) );
 
     // get radio context
     lr11xx_ctx = modem_get_radio_ctx( stack_id );
@@ -165,10 +165,10 @@ smtc_se_return_code_t smtc_secure_element_init( uint8_t stack_id )
     SMTC_MODEM_HAL_TRACE_WARNING( "Use lr11xx preprovisioned EUIs and keys\n" );
 
     // Read LR11XX pre-provisioned identity
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( lr11xx_system_read_uid( lr11xx_ctx, lr11xx_ce_data.deveui ) == LR11XX_STATUS_OK );
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( lr11xx_system_read_join_eui( lr11xx_ctx, lr11xx_ce_data.joineui ) ==
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( lr11xx_system_read_uid( lr11xx_ctx, lr11xx_ce_data[stack_id].deveui ) == LR11XX_STATUS_OK );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( lr11xx_system_read_join_eui( lr11xx_ctx, lr11xx_ce_data[stack_id].joineui ) ==
                                      LR11XX_STATUS_OK );
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( lr11xx_system_read_pin( lr11xx_ctx, lr11xx_ce_data.pin ) == LR11XX_STATUS_OK );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( lr11xx_system_read_pin( lr11xx_ctx, lr11xx_ce_data[stack_id].pin ) == LR11XX_STATUS_OK );
 #endif
 
     // Return codes are in line between secure element definition and lr11xx internal definition
@@ -511,7 +511,7 @@ smtc_se_return_code_t smtc_secure_element_set_deveui( const uint8_t deveui[SMTC_
     {
         return SMTC_SE_RC_ERROR_NPE;
     }
-    memcpy( lr11xx_ce_data.deveui, deveui, SMTC_SE_EUI_SIZE );
+    memcpy( lr11xx_ce_data[stack_id].deveui, deveui, SMTC_SE_EUI_SIZE );
     return SMTC_SE_RC_SUCCESS;
 }
 
@@ -521,7 +521,7 @@ smtc_se_return_code_t smtc_secure_element_get_deveui( uint8_t deveui[SMTC_SE_EUI
     {
         return SMTC_SE_RC_ERROR_NPE;
     }
-    memcpy( deveui, lr11xx_ce_data.deveui, SMTC_SE_EUI_SIZE );
+    memcpy( deveui, lr11xx_ce_data[stack_id].deveui, SMTC_SE_EUI_SIZE );
     return SMTC_SE_RC_SUCCESS;
 }
 
@@ -531,7 +531,7 @@ smtc_se_return_code_t smtc_secure_element_set_joineui( const uint8_t joineui[SMT
     {
         return SMTC_SE_RC_ERROR_NPE;
     }
-    memcpy( lr11xx_ce_data.joineui, joineui, SMTC_SE_EUI_SIZE );
+    memcpy( lr11xx_ce_data[stack_id].joineui, joineui, SMTC_SE_EUI_SIZE );
     return SMTC_SE_RC_SUCCESS;
 }
 
@@ -541,7 +541,7 @@ smtc_se_return_code_t smtc_secure_element_get_joineui( uint8_t joineui[SMTC_SE_E
     {
         return SMTC_SE_RC_ERROR_NPE;
     }
-    memcpy( joineui, lr11xx_ce_data.joineui, SMTC_SE_EUI_SIZE );
+    memcpy( joineui, lr11xx_ce_data[stack_id].joineui, SMTC_SE_EUI_SIZE );
     return SMTC_SE_RC_SUCCESS;
 }
 
@@ -551,7 +551,7 @@ smtc_se_return_code_t smtc_secure_element_set_pin( const uint8_t pin[SMTC_SE_PIN
     {
         return SMTC_SE_RC_ERROR_NPE;
     }
-    memcpy( lr11xx_ce_data.pin, pin, SMTC_SE_PIN_SIZE );
+    memcpy( lr11xx_ce_data[stack_id].pin, pin, SMTC_SE_PIN_SIZE );
     return SMTC_SE_RC_SUCCESS;
 }
 
@@ -562,7 +562,7 @@ smtc_se_return_code_t smtc_secure_element_get_pin( uint8_t pin[SMTC_SE_PIN_SIZE]
         return SMTC_SE_RC_ERROR_NPE;
     }
 
-    memcpy( pin, lr11xx_ce_data.pin, SMTC_SE_PIN_SIZE );
+    memcpy( pin, lr11xx_ce_data[stack_id].pin, SMTC_SE_PIN_SIZE );
     return SMTC_SE_RC_SUCCESS;
 }
 
@@ -571,17 +571,19 @@ smtc_se_return_code_t smtc_secure_element_store_context( uint8_t stack_id )
     // Note: Multistack is not suported in lr11xx crypto element
 
     lr11xx_ce_context_nvm_t ctx_old = { 0 };
-    smtc_modem_hal_context_restore( CONTEXT_SECURE_ELEMENT, 0, ( uint8_t* ) &ctx_old, sizeof( ctx_old ) );
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx_old ) + 8 - ( sizeof( ctx_old ) % 8 );  // align to 8 bytes
+    smtc_modem_hal_context_restore( CONTEXT_SECURE_ELEMENT, stack_id * real_size, ( uint8_t* ) &ctx_old, sizeof( ctx_old ) );
 
     lr11xx_ce_context_nvm_t ctx = {
-        .data = lr11xx_ce_data,
+        .data = lr11xx_ce_data[stack_id],
     };
 
     ctx.crc = lr11xx_ce_crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) );
 
     if( ctx.crc != ctx_old.crc )
     {
-        smtc_modem_hal_context_store( CONTEXT_SECURE_ELEMENT, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+        smtc_modem_hal_context_store( CONTEXT_SECURE_ELEMENT, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
         smtc_secure_element_restore_context( stack_id );
     }
     return SMTC_SE_RC_SUCCESS;
@@ -590,17 +592,19 @@ smtc_se_return_code_t smtc_secure_element_store_context( uint8_t stack_id )
 smtc_se_return_code_t smtc_secure_element_restore_context( uint8_t stack_id )
 {
     lr11xx_ce_context_nvm_t ctx;
-    smtc_modem_hal_context_restore( CONTEXT_SECURE_ELEMENT, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
+    smtc_modem_hal_context_restore( CONTEXT_SECURE_ELEMENT, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
     if( lr11xx_ce_crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) ) == ctx.crc )
     {
-        lr11xx_ce_data = ctx.data;
+        lr11xx_ce_data[stack_id] = ctx.data;
         return SMTC_SE_RC_SUCCESS;
     }
     else
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "Restore of Secure Element context fails => Return to init values\n" );
         // Initialize data structure to 0
-        memset( &lr11xx_ce_data, 0, sizeof( lr11xx_ce_data_t ) );
+        memset( &lr11xx_ce_data[stack_id], 0, sizeof( lr11xx_ce_data_t ) );
         return SMTC_SE_RC_ERROR;
     }
 }
