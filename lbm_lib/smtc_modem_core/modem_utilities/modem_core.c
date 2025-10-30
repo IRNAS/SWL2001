@@ -212,20 +212,20 @@ void modem_context_init_light( uint8_t stack_id, radio_planner_t* rp )
     // to init duty cycle
     smtc_real_region_types_t region = lorawan_api_get_region( stack_id );
     lorawan_api_set_region( region, stack_id );
-	NADALJUJ TUKAJ!!!!!
-    //modem_ctx_light[stack_id].is_modem_in_test_mode = false;
-    //modem_ctx_light[stack_id].user_alarm = 0x7FFFFFFF;
+
+    modem_ctx_light[stack_id].is_modem_in_test_mode = false;
+    modem_ctx_light[stack_id].user_alarm = 0x7FFFFFFF;
 
     // save radio planner pointer for suspend/resume features
-    //fifo_ctrl_init( &modem_ctx_light[stack_id].fifo_ctrl_obj, modem_ctx_light[stack_id].fifo_buffer, FIFO_LORAWAN_SIZE );
+    fifo_ctrl_init( &modem_ctx_light[stack_id].fifo_ctrl_obj, modem_ctx_light[stack_id].fifo_buffer, FIFO_LORAWAN_SIZE );
 
     // load modem context
-    //modem_load_modem_context( stack_id );
+    modem_load_modem_context( stack_id );
     // Increment reset counter
-    //modem_ctx_light[stack_id].modem_reset_counter++;
-    //modem_ctx_light[stack_id].report_all_downlinks_to_user = false;
+    modem_ctx_light[stack_id].modem_reset_counter++;
+    modem_ctx_light[stack_id].report_all_downlinks_to_user = false;
     // Save modem context - to keep the reset counter
-    //modem_store_modem_context( stack_id );
+    modem_store_modem_context( stack_id );
 }
 
 fifo_ctrl_t* modem_context_get_fifo_obj( uint8_t stack_id )

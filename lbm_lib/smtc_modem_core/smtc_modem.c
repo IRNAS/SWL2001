@@ -287,15 +287,15 @@ void smtc_modem_init( uint8_t stack_id )
     // EvaTODO -revisit, for now only soft ce is implemented
     smtc_secure_element_init( stack_id );
     modem_context_init_light( stack_id, &modem_radio_planner[stack_id] );
-    //modem_tx_protocol_manager_init( stack_id, &modem_radio_planner[stack_id] );
+    modem_tx_protocol_manager_init( stack_id, &modem_radio_planner[stack_id] );
 
         // If lr11xx crypto engine is used for crypto - EvaTODO look into this, not working now
 #if defined( USE_LR11XX_CE )
-   // modem_load_appkey_context( stack_id );
+    modem_load_appkey_context( stack_id );
 #endif
     // Is this going to work?
     // Event EVENT_RESET must be done at the end of init !!
-    //increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_RESET, 0, stack_id );
+    increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_RESET, 0, stack_id );
 
 }
 
@@ -303,7 +303,7 @@ uint32_t smtc_modem_run_engine( uint8_t stack_id )
 {
     // EvaTODO - this is not optimal
     rp_callback( &modem_radio_planner[stack_id] );
-    return modem_supervisor_engine( );
+    return modem_supervisor_engine( stack_id);
 }
 
 void smtc_modem_set_radio_context( uint8_t stack_id, const void* radio_ctx )
@@ -1204,7 +1204,6 @@ smtc_modem_return_code_t smtc_modem_alarm_clear_timer( uint8_t stack_id )
 {
     RETURN_BUSY_IF_TEST_MODE( );
 
-    //EvaTODO stack_id
     if( modem_get_user_alarm( stack_id ) == 0 )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "Alarm clear timer impossible: no alarm timer is currently running\n" )
@@ -1222,8 +1221,7 @@ smtc_modem_return_code_t smtc_modem_alarm_get_remaining_time( uint8_t stack_id, 
     RETURN_BUSY_IF_TEST_MODE( );
     RETURN_INVALID_IF_NULL( remaining_time_in_s );
 
-    //EvaTODO stack_id
-    if( modem_get_user_alarm( 0 ) == 0 )
+    if( modem_get_user_alarm( stack_id ) == 0 )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "Alarm get remaining impossible: no alarm timer is currently running\n" )
         return SMTC_MODEM_RC_NOT_INIT;

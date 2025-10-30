@@ -153,7 +153,7 @@ void modem_supervisor_init( void );
  * \brief Supervisor Engine
  * \retval return the maximum delay in ms at which time the engine MUST be recalled
  */
-uint32_t modem_supervisor_engine( void );
+uint32_t modem_supervisor_engine( uint8_t stack_id );
 
 /**
  * \brief Abort all task in range id_min id_max

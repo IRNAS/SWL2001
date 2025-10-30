@@ -244,6 +244,8 @@ task_valid_t modem_supervisor_add_task( smodem_task* task )
         task_manager.modem_task[task_index].task_context      = task->task_context;
         task_manager.modem_task[task_index].task_enabled      = true;
         task_manager.modem_task[task_index].updated_locked    = task->updated_locked;
+	SMTC_MODEM_HAL_TRACE_WARNING( "modem_supervisor_add_task id = %d , stack_id = %d , time_to_execute_s = %lu\n",
+				     task->id, task->stack_id, task->time_to_execute_s );
         return TASK_VALID;
     }
     SMTC_MODEM_HAL_TRACE_ERROR( "modem_supervisor_add_task id = %d unknown\n", task->id );
@@ -258,18 +260,27 @@ stask_manager* modem_supervisor_get_task( void )
 // backoff_mobile_static( ); @todo//
 // todo check_class_b_to_generate_event( );
 // EvaTODO: we probably need multiple smtc engines for multi stack?
+// Should we add mutex?
 
-uint32_t modem_supervisor_engine( void )
+uint32_t modem_supervisor_engine( uint8_t stack_id )
 {
+
+	SMTC_MODEM_HAL_TRACE_WARNING("--- Modem Supervisor Engine Run for STACK: %d---\n", stack_id);
     uint32_t sleep_time       = 0;
     uint32_t sleep_time_alarm = 0;
     sleep_time                = tx_protocol_manager_is_busy( );
-    sleep_time_alarm          = supervisor_check_user_alarm( STACK_ID_CURRENT_TASK );
+    sleep_time_alarm          = supervisor_check_user_alarm( stack_id );
     if( sleep_time > 0 )
     {
         sleep_time = MIN( sleep_time, sleep_time_alarm * 1000 );
         return ( sleep_time );
     }
+    //EvaTODO: we need to check on alram values even if there is no scheduled event for the stack - I assume returning there should be fine
+    if( stack_id != STACK_ID_CURRENT_TASK )
+    {
+	return ( sleep_time_alarm * 1000 );
+    }
+
     sleep_time = supervisor_run_lorawan_engine( STACK_ID_CURRENT_TASK );
 
     if( sleep_time > 0 )
@@ -360,7 +371,7 @@ static uint32_t supervisor_check_user_alarm( uint8_t stack_id )
         {
             modem_set_user_alarm( stack_id, 0 );
             user_alarm_in_seconds = MODEM_MAX_ALARM_S;
-            increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_ALARM, 0, 0xFF );
+            increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_ALARM, 0, stack_id );
         }
     }
 
