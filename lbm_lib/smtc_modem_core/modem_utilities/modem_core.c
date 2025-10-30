@@ -173,6 +173,17 @@ void modem_context_init_common( void ( *callback )( void ) )
 					context_callback_tmp );
 #endif
 
+
+	for (uint8_t stack = 0; stack < NUMBER_OF_STACKS; stack++)
+	{
+		for (size_t i = 0; i < SERVICE_CONFIG_COUNT; i++)
+		{
+			size_t idx = stack * SERVICE_CONFIG_COUNT + i;
+			modem_service_config[idx] = service_config_template[i];
+			modem_service_config[idx].stack_id = stack;
+		}
+	}
+
 	task_id_t task_id_tmp;
 	uint8_t   cpt_of_services_init = SERVICE_ID0_TASK;
 	for( uint8_t i = 0; i < NUMBER_OF_SERVICES; i++ )

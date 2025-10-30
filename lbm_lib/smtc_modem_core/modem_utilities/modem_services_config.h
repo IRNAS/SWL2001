@@ -111,54 +111,58 @@ typedef struct modem_service_config_s
 
 } modem_service_config_t;
 
-static modem_service_config_t modem_service_config[] = {
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_certification_services_init },
+#define SERVICE_CONFIG_COUNT ( sizeof(service_config_template) / sizeof(service_config_template[0]) )
+
+static modem_service_config_t service_config_template[] = {
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_certification_services_init },
 #ifdef ADD_RELAY_RX
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_relay_rx_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_relay_rx_services_init },
 #endif
 #if defined( ADD_RELAY_TX )
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_relay_tx_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_relay_tx_services_init },
 #endif
 #ifdef ADD_SMTC_ALC_SYNC
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_alcsync_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_alcsync_services_init },
 #endif
 #ifdef ADD_FUOTA
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_fragmentation_package_services_init },
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_remote_multicast_setup_package_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_fragmentation_package_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_remote_multicast_setup_package_services_init },
 #ifdef ENABLE_FUOTA_FMP
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_fmp_package_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_fmp_package_services_init },
 #endif
 #ifdef ENABLE_FUOTA_MPA
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_mpa_package_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_mpa_package_services_init },
 #endif
 #endif
 #ifdef ADD_ALMANAC
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = almanac_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = almanac_services_init },
 #endif
 #ifdef ADD_SMTC_STREAM
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = stream_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = stream_services_init },
 #endif
 #ifdef ADD_SMTC_CLOUD_DEVICE_MANAGEMENT
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = cloud_dm_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = cloud_dm_services_init },
 #endif
 #ifdef ADD_SMTC_LFU
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = lfu_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = lfu_services_init },
 #endif
 #ifdef ADD_LBM_GEOLOCATION
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = mw_gnss_scan_services_init },
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = mw_gnss_send_services_init },
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = mw_gnss_almanac_services_init },
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = mw_wifi_scan_services_init },
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = mw_wifi_send_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = mw_gnss_scan_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = mw_gnss_send_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = mw_gnss_almanac_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = mw_wifi_scan_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = mw_wifi_send_services_init },
 #endif
 #ifdef MODEM_BEACON_APP
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_beacon_tx_example_service_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = lorawan_beacon_tx_example_service_init },
 #endif
 #ifdef ADD_SMTC_STORE_AND_FORWARD
-    { .service_id = 0, .stack_id = 0, .callbacks_init_service = store_and_forward_flash_services_init },
+	{ .service_id = 0, .stack_id = 0, .callbacks_init_service = store_and_forward_flash_services_init },
 // { .service_id = 0, .stack_id = 0, .callbacks_init_service = store_and_forward_services_init },
 #endif
 };
+
+static modem_service_config_t modem_service_config[SERVICE_CONFIG_COUNT * NUMBER_OF_STACKS];
 
 #define NUMBER_OF_SERVICES ( sizeof modem_service_config / sizeof modem_service_config[0] )
 

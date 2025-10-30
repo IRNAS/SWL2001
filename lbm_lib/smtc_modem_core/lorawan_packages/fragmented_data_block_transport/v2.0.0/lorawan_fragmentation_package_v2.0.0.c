@@ -977,9 +977,16 @@ static uint8_t compute_data_block_integrity_ckeck( uint8_t frag_index, uint8_t s
     b0[0] = 0x30;
 
 #if defined( USE_LR11XX_CE )
-    if( smtc_modem_get_data_block_int_key( stack_id, key ) != SMTC_MODEM_RC_OK )
-    {
-        return 1;
+    if(smtc_modem_get_radio_type( stack_id ) == SMTC_MODEM_RADIO_LR11XX ){
+	if( smtc_modem_get_data_block_int_key( stack_id, key ) != SMTC_MODEM_RC_OK )
+	{
+		return 1;
+	}
+    } else {
+	if( smtc_secure_element_aes_encrypt( b0, 16, SMTC_SE_APP_KEY, key, stack_id ) != SMTC_SE_RC_SUCCESS )
+	{
+		return 1;
+	}
     }
 #else
     if( smtc_secure_element_aes_encrypt( b0, 16, SMTC_SE_APP_KEY, key, stack_id ) != SMTC_SE_RC_SUCCESS )

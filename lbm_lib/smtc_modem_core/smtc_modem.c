@@ -76,13 +76,17 @@
 
 #if defined( SX128X )
 #include "ralf_sx128x.h"
-#elif defined( SX126X )
+#endif
+#if defined( SX126X )
 #include "ralf_sx126x.h"
-#elif defined( LR11XX )
+#endif
+#if defined( LR11XX )
 #include "ralf_lr11xx.h"
-#elif defined( SX127X )
+#endif
+#if defined( SX127X )
 #include "ralf_sx127x.h"
-#elif defined( LR20XX )
+#endif
+#if defined( LR20XX )
 #include "ralf_lr20xx.h"
 #endif
 
@@ -190,6 +194,7 @@ typedef struct modem_key_ctx_s
 
 radio_planner_t modem_radio_planner[NUMBER_OF_STACKS];
 ralf_t modem_radio[NUMBER_OF_STACKS];
+smtc_modem_radio_type_t modem_radio_type[NUMBER_OF_STACKS];
 #if defined( SX127X )
 #include "sx127x.h"
 static sx127x_t sx127x[NUMBER_OF_STACKS];
@@ -205,7 +210,7 @@ struct
     uint8_t  modem_data_block_int_key[16];
 } smtc_modem_key_ctx;
 
-/* EvaTODO add multiple instances */
+/* EvaTODO add multiple instances -  for now this is applicable only for 1 lr11xx */
 #define modem_appkey_status smtc_modem_key_ctx.modem_appkey_status
 #define modem_appkey_crc smtc_modem_key_ctx.modem_appkey_crc
 #define modem_gen_appkey_status smtc_modem_key_ctx.modem_gen_appkey_status
@@ -243,23 +248,6 @@ void smtc_modem_init_common( void ( *callback_event )( void ) )
 {
     SMTC_MODEM_HAL_TRACE_INFO( "Modem Common Initialization\n" );
 
-    for( uint8_t i = 0; i < NUMBER_OF_STACKS; i++ )
-    {
-#if defined( SX128X )
-        modem_radio[i] = (ralf_t)RALF_SX128X_INSTANTIATE( NULL );
-#elif defined( SX126X )
-	modem_radio[i] = (ralf_t)RALF_SX126X_INSTANTIATE( NULL );
-#elif defined( LR11XX )
-	modem_radio[i] = (ralf_t)RALF_LR11XX_INSTANTIATE( NULL );
-#elif defined( LR20XX )
-	modem_radio[i] = (ralf_t)RALF_LR20XX_INSTANTIATE( NULL );
-#elif defined( SX127X )
-	modem_radio[i] = (ralf_t)RALF_SX127X_INSTANTIATE( &sx127x[i] );
-#else
-#error "Please select radio board.."
-#endif
-    }
-
     modem_supervisor_init( );
     modem_context_init_common( callback_event );
     modem_tx_protocol_manager_init_common();
@@ -289,9 +277,12 @@ void smtc_modem_init( uint8_t stack_id )
     modem_context_init_light( stack_id, &modem_radio_planner[stack_id] );
     modem_tx_protocol_manager_init( stack_id, &modem_radio_planner[stack_id] );
 
-        // If lr11xx crypto engine is used for crypto - EvaTODO look into this, not working now
+        // If lr11xx crypto engine is used for crypto and we have lr11xx radio, load appkey context
 #if defined( USE_LR11XX_CE )
-    modem_load_appkey_context( stack_id );
+    if( smtc_modem_get_radio_type( stack_id ) == SMTC_MODEM_RADIO_LR11XX )
+    {
+	modem_load_appkey_context( stack_id );
+    }
 #endif
     // Is this going to work?
     // Event EVENT_RESET must be done at the end of init !!
@@ -306,23 +297,80 @@ uint32_t smtc_modem_run_engine( uint8_t stack_id )
     return modem_supervisor_engine( stack_id);
 }
 
-void smtc_modem_set_radio_context( uint8_t stack_id, const void* radio_ctx )
+void smtc_modem_set_radio_context( uint8_t stack_id, smtc_modem_radio_type_t radio_type, const void* radio_ctx )
 {
-#if defined( SX1272 ) || defined( SX1276 )
-    // update modem_radio context with provided one
-    ( ( sx127x_t* ) modem_radio[stack_id].ral.context )->hal_context = radio_ctx;
+    switch( radio_type )
+    {
+	case SMTC_MODEM_RADIO_LR11XX:
+#if defined( LR11XX )
+	    modem_radio[stack_id] = (ralf_t)RALF_LR11XX_INSTANTIATE( NULL );
+	    // update modem_radio context with provided one
+	    modem_radio[stack_id].ral.context = radio_ctx;
+	    modem_radio_type[stack_id] = SMTC_MODEM_RADIO_LR11XX;
+	    break;
 #else
-    // update modem_radio context with provided one
-    modem_radio[stack_id].ral.context = radio_ctx;
+	    SMTC_MODEM_HAL_TRACE_ERROR( "LR11XX radio type not supported in this build\n" );
+	    return;
 #endif
-    // Save modem radio context in case of direct access to radio by the modem
-    modem_set_radio_ctx( stack_id, modem_radio[stack_id].ral.context );
+	case SMTC_MODEM_RADIO_LR20XX:
+#if defined( LR20XX )
+	    modem_radio[stack_id] = (ralf_t)RALF_LR20XX_INSTANTIATE( NULL );
+	    // update modem_radio context with provided one
+	    modem_radio[stack_id].ral.context = radio_ctx;
+	    modem_radio_type[stack_id] = SMTC_MODEM_RADIO_LR20XX;
+	    break;
+#else
+	    SMTC_MODEM_HAL_TRACE_ERROR( "LR20XX radio type not supported in this build\n" );
+	    return;
+#endif
+	case SMTC_MODEM_RADIO_SX126X:
+#if defined( SX126X )
+	    modem_radio[stack_id] = (ralf_t)RALF_SX126X_INSTANTIATE( NULL );
+	    // update modem_radio context with provided one
+	    modem_radio[stack_id].ral.context = radio_ctx;
+	    modem_radio_type[stack_id] = SMTC_MODEM_RADIO_SX126X;
+	    break;
+#else
+	    SMTC_MODEM_HAL_TRACE_ERROR( "SX126X radio type not supported in this build\n" );
+	    return;
+#endif
+	case SMTC_MODEM_RADIO_SX127X:
+#if defined( SX127X )
+	    modem_radio[stack_id] = (ralf_t)RALF_SX127X_INSTANTIATE( &sx127x[i] );
+	    // update modem_radio context with provided one
+	    ( ( sx127x_t* ) modem_radio[stack_id].ral.context )->hal_context = radio_ctx;
+	    modem_radio_type[stack_id] = SMTC_MODEM_RADIO_SX127X;
+	    break;
+#else
+	    SMTC_MODEM_HAL_TRACE_ERROR( "SX127X radio type not supported in this build\n" );
+	    return;
+#endif
+	case SMTC_MODEM_RADIO_SX128X:
+#if defined( SX128X )
+	    modem_radio[stack_id] = (ralf_t)RALF_SX128X_INSTANTIATE( NULL );
+	    // update modem_radio context with provided one
+	    modem_radio[stack_id].ral.context = radio_ctx;
+	    modem_radio_type[stack_id] = SMTC_MODEM_RADIO_SX128X;
+	    break;
+#else
+	    SMTC_MODEM_HAL_TRACE_ERROR( "SX128X radio type not supported in this build\n" );
+	    return;
+#endif
+	default:
+	    SMTC_MODEM_HAL_TRACE_ERROR( "Unknown radio type\n" );
+	    return;
+    }
 }
 
 const void* smtc_modem_get_radio_context( uint8_t stack_id )
 {
     // Get radio context
     return modem_radio[stack_id].ral.context;
+}
+
+smtc_modem_radio_type_t smtc_modem_get_radio_type( uint8_t stack_id )
+{
+    return modem_radio_type[stack_id];
 }
 
 bool smtc_modem_is_irq_flag_pending( uint8_t stack_id )
@@ -415,6 +463,10 @@ smtc_modem_return_code_t smtc_modem_set_deveui( uint8_t stack_id, const uint8_t 
 smtc_modem_return_code_t smtc_modem_get_data_block_int_key( uint8_t stack_id,
                                                             uint8_t data_block_int_key[SMTC_MODEM_KEY_LENGTH] )
 {
+    if(modem_radio_type[stack_id] != SMTC_MODEM_RADIO_LR11XX)
+    {
+	return SMTC_MODEM_RC_INVALID;
+    }
     RETURN_BUSY_IF_TEST_MODE( );
     RETURN_INVALID_IF_NULL( data_block_int_key );
 
@@ -428,6 +480,10 @@ smtc_modem_return_code_t smtc_modem_get_data_block_int_key( uint8_t stack_id,
 smtc_modem_return_code_t smtc_modem_derive_and_set_data_block_int_key( uint8_t       stack_id,
                                                                        const uint8_t gen_appkey[SMTC_MODEM_KEY_LENGTH] )
 {
+    if(modem_radio_type[stack_id] != SMTC_MODEM_RADIO_LR11XX)
+    {
+	return SMTC_MODEM_RC_INVALID;
+    }
     RETURN_BUSY_IF_TEST_MODE( );
     RETURN_INVALID_IF_NULL( gen_appkey );
 
@@ -464,32 +520,39 @@ smtc_modem_return_code_t smtc_modem_set_appkey( uint8_t stack_id, const uint8_t 
 
 // To prevent too much flash access first check crc on key in case of Hardware Secure element
 #if defined( USE_LR11XX_CE )
-    uint32_t new_crc = crc( appkey, SMTC_MODEM_KEY_LENGTH );
-
-    if( ( modem_gen_appkey_status == MODEM_KEY_CRC_STATUS_INVALID ) || ( modem_gen_appkey_crc != new_crc ) )
+    if(modem_radio_type[stack_id] == SMTC_MODEM_RADIO_LR11XX )
     {
-        modem_gen_appkey_crc    = new_crc;
-        modem_gen_appkey_status = MODEM_KEY_CRC_STATUS_VALID;
-#endif
-        if( lorawan_api_set_appkey( appkey, stack_id ) != OKLORAWAN )
+        uint32_t new_crc = crc( appkey, SMTC_MODEM_KEY_LENGTH );
+
+        if( ( modem_gen_appkey_status == MODEM_KEY_CRC_STATUS_INVALID ) || ( modem_gen_appkey_crc != new_crc ) )
         {
-            return_code = SMTC_MODEM_RC_FAIL;
-        }
-#if defined( USE_LR11XX_CE )
-        else
-        {
-#if defined( ADD_FUOTA ) && ( ADD_FUOTA == 2 )
-            if( smtc_modem_derive_and_set_data_block_int_key( stack_id, appkey ) != SMTC_MODEM_RC_OK )
+            modem_gen_appkey_crc    = new_crc;
+            modem_gen_appkey_status = MODEM_KEY_CRC_STATUS_VALID;
+            if( lorawan_api_set_appkey( appkey, stack_id ) != OKLORAWAN )
             {
                 return_code = SMTC_MODEM_RC_FAIL;
             }
+            else
+            {
+#if defined( ADD_FUOTA ) && ( ADD_FUOTA == 2 )
+                if( smtc_modem_derive_and_set_data_block_int_key( stack_id, appkey ) != SMTC_MODEM_RC_OK )
+                {
+                    return_code = SMTC_MODEM_RC_FAIL;
+                }
 #endif
 
-            // Store appkey crc and status
-            modem_store_key_context( stack_id );
+                // Store appkey crc and status
+                modem_store_key_context( stack_id );
+            }
         }
+	return return_code;
     }
 #endif
+
+    if( lorawan_api_set_appkey( appkey, stack_id ) != OKLORAWAN )
+    {
+	return_code = SMTC_MODEM_RC_FAIL;
+    }
     return return_code;
 }
 
@@ -511,25 +574,31 @@ smtc_modem_return_code_t smtc_modem_set_nwkkey( uint8_t stack_id, const uint8_t 
 
 // To prevent too much flash access first check crc on key in case of Hardware Secure element
 #if defined( USE_LR11XX_CE )
-    uint32_t new_crc = crc( nwkkey, SMTC_MODEM_KEY_LENGTH );
-
-    if( ( modem_appkey_status == MODEM_KEY_CRC_STATUS_INVALID ) || ( modem_appkey_crc != new_crc ) )
+    if(modem_radio_type[stack_id] == SMTC_MODEM_RADIO_LR11XX )
     {
-        modem_appkey_crc    = new_crc;
-        modem_appkey_status = MODEM_KEY_CRC_STATUS_VALID;
-#endif
-        if( lorawan_api_set_nwkkey( nwkkey, stack_id ) != OKLORAWAN )
+        uint32_t new_crc = crc( nwkkey, SMTC_MODEM_KEY_LENGTH );
+
+        if( ( modem_appkey_status == MODEM_KEY_CRC_STATUS_INVALID ) || ( modem_appkey_crc != new_crc ) )
         {
-            return_code = SMTC_MODEM_RC_FAIL;
+            modem_appkey_crc    = new_crc;
+            modem_appkey_status = MODEM_KEY_CRC_STATUS_VALID;
+            if( lorawan_api_set_nwkkey( nwkkey, stack_id ) != OKLORAWAN )
+            {
+                return_code = SMTC_MODEM_RC_FAIL;
+            }
+            else
+            {
+                // Store appkey crc and status
+                modem_store_key_context( stack_id );
+            }
         }
-#if defined( USE_LR11XX_CE )
-        else
-        {
-            // Store appkey crc and status
-            modem_store_key_context( stack_id );
-        }
+	return return_code;
     }
-#endif
+#endif // USE_LR11XX_CE
+    if( lorawan_api_set_nwkkey( nwkkey, stack_id ) != OKLORAWAN )
+    {
+        return_code = SMTC_MODEM_RC_FAIL;
+    }
     return return_code;
 }
 
@@ -1240,6 +1309,10 @@ smtc_modem_return_code_t smtc_modem_alarm_get_remaining_time( uint8_t stack_id, 
 #if defined( USE_LR11XX_CE )
 smtc_modem_return_code_t smtc_modem_get_pin( uint8_t stack_id, uint8_t chip_pin[4] )
 {
+    if(modem_radio_type[stack_id] != SMTC_MODEM_RADIO_LR11XX)
+    {
+	return SMTC_MODEM_RC_INVALID;
+    }
     RETURN_BUSY_IF_TEST_MODE( );
     smtc_modem_status_mask_t status_mask = modem_get_status( stack_id );
     if( ( ( status_mask & SMTC_MODEM_STATUS_JOINED ) == SMTC_MODEM_STATUS_JOINED ) ||
@@ -1278,6 +1351,10 @@ smtc_modem_return_code_t smtc_modem_get_pin( uint8_t stack_id, uint8_t chip_pin[
 
 smtc_modem_return_code_t smtc_modem_get_chip_eui( uint8_t stack_id, uint8_t chip_eui[8] )
 {
+    if(modem_radio_type[stack_id] != SMTC_MODEM_RADIO_LR11XX)
+    {
+	return SMTC_MODEM_RC_INVALID;
+    }
     RETURN_BUSY_IF_TEST_MODE( );
 
     lr11xx_status_t status = lr11xx_system_read_uid( modem_get_radio_ctx( stack_id ), chip_eui );
@@ -1291,6 +1368,10 @@ smtc_modem_return_code_t smtc_modem_get_chip_eui( uint8_t stack_id, uint8_t chip
 
 smtc_modem_return_code_t smtc_modem_derive_keys( uint8_t stack_id )
 {
+    if(modem_radio_type[stack_id] != SMTC_MODEM_RADIO_LR11XX)
+    {
+	return SMTC_MODEM_RC_INVALID;
+    }
     RETURN_BUSY_IF_TEST_MODE( );
     smtc_modem_status_mask_t status_mask = modem_get_status( stack_id );
     if( ( ( status_mask & SMTC_MODEM_STATUS_JOINED ) == SMTC_MODEM_STATUS_JOINED ) ||
@@ -1331,6 +1412,10 @@ smtc_modem_return_code_t smtc_modem_derive_keys( uint8_t stack_id )
 
 smtc_modem_return_code_t smtc_modem_secure_element_restore_context(uint8_t stack_id)
 {
+	if(modem_radio_type[stack_id] != SMTC_MODEM_RADIO_LR11XX)
+	{
+		return SMTC_MODEM_RC_INVALID;
+	}
 	smtc_modem_return_code_t return_code = SMTC_MODEM_RC_OK;
 
 	if( smtc_secure_element_restore_context(stack_id) != SMTC_SE_RC_SUCCESS )
@@ -1343,6 +1428,10 @@ smtc_modem_return_code_t smtc_modem_secure_element_restore_context(uint8_t stack
 
 smtc_modem_return_code_t smtc_modem_secure_element_store_context(uint8_t stack_id)
 {
+	if(modem_radio_type[stack_id] != SMTC_MODEM_RADIO_LR11XX)
+	{
+		return SMTC_MODEM_RC_INVALID;
+	}
 	smtc_modem_return_code_t return_code = SMTC_MODEM_RC_OK;
 
 	if( smtc_secure_element_store_context(stack_id) != SMTC_SE_RC_SUCCESS )
@@ -2989,6 +3078,10 @@ static smtc_modem_return_code_t smtc_modem_custom_dr_distribution_to_tab(
 #if defined( USE_LR11XX_CE )
 static void modem_store_key_context( uint8_t stack_id )
 {
+    if(modem_radio_type[stack_id] != SMTC_MODEM_RADIO_LR11XX)
+    {
+	return;
+    }
     modem_key_ctx_t ctx = { 0 };
 
     /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
@@ -3016,6 +3109,10 @@ static void modem_store_key_context( uint8_t stack_id )
 
 static void modem_load_appkey_context( uint8_t stack_id )
 {
+    if(modem_radio_type[stack_id] != SMTC_MODEM_RADIO_LR11XX)
+    {
+	return;
+    }
     modem_key_ctx_t ctx;
     /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
     uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
@@ -3043,7 +3140,7 @@ static void modem_load_appkey_context( uint8_t stack_id )
         smtc_modem_hal_context_restore( CONTEXT_KEY_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
     }
 }
-#endif
+#endif // USE_LR11XX_CE
 
 #if defined( ADD_RELAY_TX )
 smtc_modem_return_code_t smtc_modem_relay_tx_get_activation_mode( uint8_t                                stack_id,

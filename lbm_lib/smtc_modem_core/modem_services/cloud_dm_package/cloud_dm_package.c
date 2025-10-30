@@ -1509,7 +1509,9 @@ static bool dm_status_payload( cloud_dm_t* ctx, uint8_t stack_id, uint8_t* dm_up
             case DM_INFO_CHIPEUI: {
                 uint8_t p_tmp_chip_eui[8] = { 0 };
 #if defined( USE_LR11XX_CE )
-                lr11xx_system_read_uid( modem_get_radio_ctx( 0 ), ( uint8_t* ) &p_tmp_chip_eui );
+		if( modem_get_radio_type( stack_id ) == MODEM_RADIO_TYPE_LR11XX ) {
+                    lr11xx_system_read_uid( modem_get_radio_ctx( stack_id ), ( uint8_t* ) &p_tmp_chip_eui );
+		}
 #endif  // USE_LR11XX_CE
                 memcpy1_r( p_tmp, p_tmp_chip_eui, 8 );
                 break;
