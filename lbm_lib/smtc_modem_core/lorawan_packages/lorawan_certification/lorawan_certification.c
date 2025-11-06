@@ -63,7 +63,7 @@
  * -----------------------------------------------------------------------------
  * --- PRIVATE MACROS-----------------------------------------------------------
  */
-#define NUMBER_OF_CERTIF_OBJ 1
+#define NUMBER_OF_CERTIF_OBJ NUMBER_OF_STACKS
 
 /*!
  * \brief Returns the minimum value between a and b

@@ -1245,7 +1245,6 @@ void rp_radio_irq_callback( void* obj )
     rp->radio_irq_flag                      = true;
     rp->irq_timestamp_ms[rp->radio_task_id] = smtc_modem_hal_get_time_in_ms( );
     smtc_modem_hal_user_lbm_irq( );
-    SMTC_MODEM_HAL_TRACE_WARNING( "RP: Radio IRQ callback called on stack %d\n", rp->stack_id );
 }
 
 static void rp_timer_irq_callback( void* obj )
