@@ -132,7 +132,7 @@ struct
  * --- PRIVATE FUNCTIONS DECLARATION -------------------------------------------
  */
 
-static uint32_t supervisor_check_user_alarm( uint8_t stack_id );
+static uint32_t supervisor_check_user_alarm( void );
 static uint32_t supervisor_run_lorawan_engine( uint8_t stack_id );
 static uint32_t supervisor_find_next_task( void );
 
@@ -262,23 +262,16 @@ stask_manager* modem_supervisor_get_task( void )
 // EvaTODO: we probably need multiple smtc engines for multi stack?
 // Should we add mutex?
 
-uint32_t modem_supervisor_engine( uint8_t stack_id )
+uint32_t modem_supervisor_engine( void )
 {
-
-	SMTC_MODEM_HAL_TRACE_WARNING("--- Modem Supervisor Engine Run for STACK: %d---\n", stack_id);
     uint32_t sleep_time       = 0;
     uint32_t sleep_time_alarm = 0;
     sleep_time                = tx_protocol_manager_is_busy( );
-    sleep_time_alarm          = supervisor_check_user_alarm( stack_id );
+    sleep_time_alarm          = supervisor_check_user_alarm( );
     if( sleep_time > 0 )
     {
         sleep_time = MIN( sleep_time, sleep_time_alarm * 1000 );
         return ( sleep_time );
-    }
-    //EvaTODO: we need to check on alram values even if there is no scheduled event for the stack - I assume returning there should be fine
-    if( stack_id != STACK_ID_CURRENT_TASK )
-    {
-	return ( sleep_time_alarm * 1000 );
     }
 
     sleep_time = supervisor_run_lorawan_engine( STACK_ID_CURRENT_TASK );
@@ -358,24 +351,33 @@ void modem_supervisor_set_modem_mute_with_priority_parameter( task_priority_t pr
  * --- PRIVATE FUNCTIONS DEFINITION --------------------------------------------
  */
 
-static uint32_t supervisor_check_user_alarm( uint8_t stack_id )
+static uint32_t supervisor_check_user_alarm( void )
 {
-    uint32_t alarm                 = modem_get_user_alarm( stack_id );
-    int32_t  user_alarm_in_seconds = MODEM_MAX_ALARM_S;
-    // manage the user alarm
-    if( alarm != 0 )
+    int32_t  min_user_alarm_in_seconds = MODEM_MAX_ALARM_S;
+    // Loop on all stacks to find the nearest user alarm
+    for ( uint8_t stack_id = 0; stack_id < NUMBER_OF_STACKS; stack_id++ )
     {
-        user_alarm_in_seconds = ( int32_t ) ( alarm - smtc_modem_hal_get_time_in_s( ) );
+	uint32_t alarm                 = modem_get_user_alarm( stack_id );
+	int32_t  user_alarm_in_seconds = MODEM_MAX_ALARM_S;
+	// manage the user alarm
+	if( alarm != 0 )
+	{
+		user_alarm_in_seconds = ( int32_t ) ( alarm - smtc_modem_hal_get_time_in_s( ) );
 
-        if( user_alarm_in_seconds <= 0 )
-        {
-            modem_set_user_alarm( stack_id, 0 );
-            user_alarm_in_seconds = MODEM_MAX_ALARM_S;
-            increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_ALARM, 0, stack_id );
-        }
+		if( user_alarm_in_seconds <= 0 )
+		{
+			modem_set_user_alarm( stack_id, 0 );
+			user_alarm_in_seconds = MODEM_MAX_ALARM_S;
+			increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_ALARM, 0, stack_id );
+		}
+	}
+	if( min_user_alarm_in_seconds > user_alarm_in_seconds )
+	{
+		min_user_alarm_in_seconds = user_alarm_in_seconds;
+	}
     }
 
-    return ( uint32_t ) user_alarm_in_seconds;
+    return ( uint32_t ) min_user_alarm_in_seconds;
 }
 
 static uint32_t supervisor_run_lorawan_engine( uint8_t stack_id )

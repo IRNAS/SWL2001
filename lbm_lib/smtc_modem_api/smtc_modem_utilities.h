@@ -99,11 +99,9 @@ void smtc_modem_init( uint8_t stack_id );
  * @remark This function must be called in main loop. It returns an amount of ms after which the function must at least
  * be called again
  *
- * @param [in] stack_id stack identifier
- *
  * @return  the time in ms after which the function must at least be called again
  */
-uint32_t smtc_modem_run_engine( uint8_t stack_id );
+uint32_t smtc_modem_run_engine( void );
 
 /**
  * @brief Check if some modem irq flags are pending

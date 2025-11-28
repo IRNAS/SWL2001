@@ -290,11 +290,15 @@ void smtc_modem_init( uint8_t stack_id )
 
 }
 
-uint32_t smtc_modem_run_engine( uint8_t stack_id )
+uint32_t smtc_modem_run_engine( void )
 {
-    // EvaTODO - this is not optimal
-    rp_callback( &modem_radio_planner[stack_id] );
-    return modem_supervisor_engine( stack_id);
+    // Loop over all stacks and update their radio planner
+    for( uint8_t i = 0; i < NUMBER_OF_STACKS; i++ )
+    {
+	rp_callback( &modem_radio_planner[i] );
+    }
+
+    return modem_supervisor_engine( );
 }
 
 void smtc_modem_set_radio_context( uint8_t stack_id, smtc_modem_radio_type_t radio_type, const void* radio_ctx )
