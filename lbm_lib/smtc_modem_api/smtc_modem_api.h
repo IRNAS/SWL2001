@@ -1060,19 +1060,21 @@ smtc_modem_return_code_t smtc_modem_get_suspend_radio_communications( uint8_t st
 /**
  * @brief Suspend the radio communications initiated by the modem
  *
- * @param [in] suspend The configuration to be applied (true: suspend communications / false: resume communications)
+ * @param [in] stack_id     Stack identifier
+ * @param [in] suspend      The configuration to be applied (true: suspend communications / false: resume communications)
  *
  * @return Modem return code as defined in @ref smtc_modem_return_code_t
  * @retval SMTC_MODEM_RC_OK            Command executed without errors
  * @retval SMTC_MODEM_RC_BUSY          Modem is currently in test mode
  */
-smtc_modem_return_code_t smtc_modem_suspend_radio_communications( bool suspend );
+smtc_modem_return_code_t smtc_modem_suspend_radio_communications( uint8_t stack_id, bool suspend );
 
 /**
  * @brief Set and start the alarm timer (up to 864000s ie 10 days)
  *
  * @remark When the timer expires, an alarm event is generated
  *
+ * @param [in] stack_id              Stack identifier
  * @param [in] alarm_timer_in_s Alarm timer in second
  *
  * @return Modem return code as defined in @ref smtc_modem_return_code_t
@@ -1080,7 +1082,7 @@ smtc_modem_return_code_t smtc_modem_suspend_radio_communications( bool suspend )
  * @retval SMTC_MODEM_RC_INVALID       \p alarm_timer_in_s exceed max value of 864000s (10 days)
  * @retval SMTC_MODEM_RC_BUSY          Modem is currently in test mode
  */
-smtc_modem_return_code_t smtc_modem_alarm_start_timer( uint32_t alarm_timer_in_s );
+smtc_modem_return_code_t smtc_modem_alarm_start_timer( uint8_t stack_id, uint32_t alarm_timer_in_s );
 
 /**
  * @brief Stop and clear the alarm timer
@@ -1090,11 +1092,12 @@ smtc_modem_return_code_t smtc_modem_alarm_start_timer( uint32_t alarm_timer_in_s
  * @retval SMTC_MODEM_RC_NOT_INIT      No alarm timer currently running
  * @retval SMTC_MODEM_RC_BUSY          Modem is currently in test mode
  */
-smtc_modem_return_code_t smtc_modem_alarm_clear_timer( void );
+smtc_modem_return_code_t smtc_modem_alarm_clear_timer( uint8_t stack_id );
 
 /**
  * @brief Get the number of seconds remaining before the alarm triggers an event
  *
+ * @param [in]  stack_id               Stack identifier
  * @param [out] remaining_time_in_s Number of seconds remaining before the alarm triggers an event
  *
  * @return Modem return code as defined in @ref smtc_modem_return_code_t
@@ -1103,7 +1106,7 @@ smtc_modem_return_code_t smtc_modem_alarm_clear_timer( void );
  * @retval SMTC_MODEM_RC_INVALID       \p remaining_time_in_s is NULL
  * @retval SMTC_MODEM_RC_BUSY          Modem is currently in test mode
  */
-smtc_modem_return_code_t smtc_modem_alarm_get_remaining_time( uint32_t* remaining_time_in_s );
+smtc_modem_return_code_t smtc_modem_alarm_get_remaining_time( uint8_t stack_id, uint32_t* remaining_time_in_s );
 
 /*
  * -----------------------------------------------------------------------------
@@ -1489,6 +1492,7 @@ smtc_modem_return_code_t smtc_modem_csma_get_parameters( uint8_t stack_id, uint8
 /**
  * @brief Get the total charge counter of the modem in mAh
  *
+ * @param [in]  stack_id    Stack identifier
  * @param [out] charge_mah Accumulated charge in mAh
  *
  * @return Modem return code as defined in @ref smtc_modem_return_code_t
@@ -1496,25 +1500,28 @@ smtc_modem_return_code_t smtc_modem_csma_get_parameters( uint8_t stack_id, uint8
  * @retval SMTC_MODEM_RC_INVALID       Parameter \p charge_mah is NULL
  * @retval SMTC_MODEM_RC_BUSY          Modem is currently in test mode
  */
-smtc_modem_return_code_t smtc_modem_get_charge( uint32_t* charge_mah );
+smtc_modem_return_code_t smtc_modem_get_charge( uint8_t stack_id, uint32_t* charge_mah );
 
 /**
  * @brief Get the Radio Planner statistics in array
  *
+ * @param stack_id
  * @param stats_array
  * @param stats_array_length
  * @return smtc_modem_return_code_t
  */
-smtc_modem_return_code_t smtc_modem_get_rp_stats_to_array( uint8_t* stats_array, uint16_t* stats_array_length );
+smtc_modem_return_code_t smtc_modem_get_rp_stats_to_array( uint8_t stack_id, uint8_t* stats_array, uint16_t* stats_array_length );
 
 /**
  * @brief Reset the total charge counter of the modem
+ *
+ * @param [in] stack_id Stack identifier
  *
  * @return Modem return code as defined in @ref smtc_modem_return_code_t
  * @retval SMTC_MODEM_RC_OK            Command executed without errors
  * @retval SMTC_MODEM_RC_BUSY          Modem is currently in test mode
  */
-smtc_modem_return_code_t smtc_modem_reset_charge( void );
+smtc_modem_return_code_t smtc_modem_reset_charge( uint8_t stack_id );
 
 /*
  * -----------------------------------------------------------------------------
@@ -2279,6 +2286,7 @@ smtc_modem_return_code_t smtc_modem_store_and_forward_flash_get_number_of_free_s
 /**
  * @brief  Enable or disable duty cycle feature
  *
+ * @param [in] stack_id Stack identifier
  * @param [in] enable Status of the duty cycle feature to set (true: enable, false: disable)
  *
  * @return Modem return code as defined in @ref smtc_modem_return_code_t
@@ -2286,7 +2294,7 @@ smtc_modem_return_code_t smtc_modem_store_and_forward_flash_get_number_of_free_s
  * @retval SMTC_MODEM_RC_BUSY              Modem is currently in test mode
  * @retval SMTC_MODEM_RC_FAIL              Duty cycle feature is not ready
  */
-smtc_modem_return_code_t smtc_modem_debug_set_duty_cycle_state( bool enable );
+smtc_modem_return_code_t smtc_modem_debug_set_duty_cycle_state( uint8_t   stack_id, bool enable );
 
 /**
  * @brief join network in ABP

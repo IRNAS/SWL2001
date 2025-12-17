@@ -158,9 +158,11 @@ typedef enum smtc_se_key_identifier_e
 /**
  * @brief Initialization of Secure Element driver
  *
+ * @param [in] stack_id The Stack Identifier
+ *
  * @return Secure element return code as defined in @ref smtc_se_return_code_t
  */
-smtc_se_return_code_t smtc_secure_element_init( void );
+smtc_se_return_code_t smtc_secure_element_init( uint8_t stack_id );
 
 /**
  * @brief Sets a key

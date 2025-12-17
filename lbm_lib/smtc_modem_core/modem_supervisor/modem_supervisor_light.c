@@ -118,6 +118,7 @@ struct
 /* clang-format off */
 #define task_manager modem_supervisor_context.task_manager
 
+/* EvaTODO: do we need cb for each stack? */
 #define supervisor_context_callback modem_supervisor_context.supervisor_context_callback
 #define supervisor_on_launch_func modem_supervisor_context.supervisor_on_launch_func
 #define supervisor_on_update_func modem_supervisor_context.supervisor_on_update_func
@@ -243,6 +244,8 @@ task_valid_t modem_supervisor_add_task( smodem_task* task )
         task_manager.modem_task[task_index].task_context      = task->task_context;
         task_manager.modem_task[task_index].task_enabled      = true;
         task_manager.modem_task[task_index].updated_locked    = task->updated_locked;
+	SMTC_MODEM_HAL_TRACE_WARNING( "modem_supervisor_add_task id = %d , stack_id = %d , time_to_execute_s = %lu\n",
+				     task->id, task->stack_id, task->time_to_execute_s );
         return TASK_VALID;
     }
     SMTC_MODEM_HAL_TRACE_ERROR( "modem_supervisor_add_task id = %d unknown\n", task->id );
@@ -256,6 +259,7 @@ stask_manager* modem_supervisor_get_task( void )
 
 // backoff_mobile_static( ); @todo//
 // todo check_class_b_to_generate_event( );
+// EvaTODO: Should we add mutex?
 
 uint32_t modem_supervisor_engine( void )
 {
@@ -302,7 +306,7 @@ uint32_t modem_supervisor_engine( void )
         supervisor_on_launch_func[CURRENT_TASK_ID]( supervisor_context_callback[CURRENT_TASK_ID] );
         task_manager.modem_task[task_manager.next_task_id].priority = TASK_FINISH;
     }
-    uint32_t alarm                 = modem_get_user_alarm( );
+    uint32_t alarm                 = modem_get_user_alarm( task_manager.modem_task[task_manager.next_task_id].stack_id );
     int32_t  user_alarm_in_seconds = MODEM_MAX_ALARM_S / 1000;
     if( alarm != 0 )
     {
@@ -346,22 +350,31 @@ void modem_supervisor_set_modem_mute_with_priority_parameter( task_priority_t pr
 
 static uint32_t supervisor_check_user_alarm( void )
 {
-    uint32_t alarm                 = modem_get_user_alarm( );
-    int32_t  user_alarm_in_seconds = MODEM_MAX_ALARM_S;
-    // manage the user alarm
-    if( alarm != 0 )
+    int32_t  min_user_alarm_in_seconds = MODEM_MAX_ALARM_S;
+    // Loop on all stacks to find the nearest user alarm
+    for ( uint8_t stack_id = 0; stack_id < NUMBER_OF_STACKS; stack_id++ )
     {
-        user_alarm_in_seconds = ( int32_t ) ( alarm - smtc_modem_hal_get_time_in_s( ) );
+	uint32_t alarm                 = modem_get_user_alarm( stack_id );
+	int32_t  user_alarm_in_seconds = MODEM_MAX_ALARM_S;
+	// manage the user alarm
+	if( alarm != 0 )
+	{
+		user_alarm_in_seconds = ( int32_t ) ( alarm - smtc_modem_hal_get_time_in_s( ) );
 
-        if( user_alarm_in_seconds <= 0 )
-        {
-            modem_set_user_alarm( 0 );
-            user_alarm_in_seconds = MODEM_MAX_ALARM_S;
-            increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_ALARM, 0, 0xFF );
-        }
+		if( user_alarm_in_seconds <= 0 )
+		{
+			modem_set_user_alarm( stack_id, 0 );
+			user_alarm_in_seconds = MODEM_MAX_ALARM_S;
+			increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_ALARM, 0, stack_id );
+		}
+	}
+	if( min_user_alarm_in_seconds > user_alarm_in_seconds )
+	{
+		min_user_alarm_in_seconds = user_alarm_in_seconds;
+	}
     }
 
-    return ( uint32_t ) user_alarm_in_seconds;
+    return ( uint32_t ) min_user_alarm_in_seconds;
 }
 
 static uint32_t supervisor_run_lorawan_engine( uint8_t stack_id )

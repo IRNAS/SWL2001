@@ -106,7 +106,7 @@ void smtc_lbt_launch_callback_for_rp( void* rp_void )
     uint8_t          id = rp->radio_task_id;
     int16_t          rssi_tmp;
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( false );
+    smtc_modem_hal_set_ant_switch( rp->stack_id, false );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_pkt_type( &( rp->radio->ral ), rp->radio_params[id].pkt_type ) ==
                                      RAL_STATUS_OK );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE(
@@ -187,7 +187,7 @@ void smtc_lbt_listen_channel( smtc_lbt_t* lbt_obj, uint32_t freq, bool is_at_tim
     if( is_at_time == true )
     {
         rp_task.start_time_ms =
-            target_time_ms - lbt_obj->listen_duration_ms - smtc_modem_hal_get_radio_tcxo_startup_delay_ms( );
+            target_time_ms - lbt_obj->listen_duration_ms - smtc_modem_hal_get_radio_tcxo_startup_delay_ms( lbt_obj->rp->stack_id );
         rp_task.state = RP_TASK_STATE_SCHEDULE;
     }
     else

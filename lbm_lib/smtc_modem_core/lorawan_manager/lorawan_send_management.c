@@ -151,7 +151,7 @@ void lorawan_send_add_task( uint8_t stack_id, uint8_t f_port, bool send_fport, b
     if( emergency == true )
     {
         task_send.priority = TASK_HIGH_PRIORITY;
-        smtc_duty_cycle_enable_set( SMTC_DTC_PARTIAL_DISABLED );
+        smtc_duty_cycle_enable_set( stack_id, SMTC_DTC_PARTIAL_DISABLED );
     }
     else
     {
@@ -223,7 +223,7 @@ static void lorawan_send_management_service_on_update( void* context )
     stask_manager* task_manager = ( stask_manager* ) context;
     if( task_manager->modem_task[VIRTUAL_TASK_ID].priority == TASK_HIGH_PRIORITY )
     {
-        smtc_duty_cycle_enable_set( SMTC_DTC_ENABLED );
+        smtc_duty_cycle_enable_set( STACK_ID_CURRENT_TASK, SMTC_DTC_ENABLED );
     }
 
     if( task_manager->modem_task[VIRTUAL_TASK_ID].task_enabled == true )

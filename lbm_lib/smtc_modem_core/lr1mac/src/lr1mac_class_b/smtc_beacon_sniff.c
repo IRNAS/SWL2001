@@ -399,7 +399,7 @@ void smtc_beacon_sniff_launch_callback_for_rp( void* rp_void )
     {
     }
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( false );
+    smtc_modem_hal_set_ant_switch( rp->stack_id,false );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_rx( &( rp->radio->ral ), rp->radio_params[id].rx.timeout_in_ms ) ==
                                      RAL_STATUS_OK );
     rp_stats_set_rx_timestamp( &rp->stats, smtc_modem_hal_get_time_in_ms( ) );
@@ -770,7 +770,7 @@ static void update_beacon_rx_nb_symb( smtc_lr1_beacon_t* lr1_beacon_obj, uint32_
 }
 static uint32_t compute_start_time( smtc_lr1_beacon_t* lr1_beacon_obj )
 {
-    int8_t  board_delay_ms = smtc_modem_hal_get_radio_tcxo_startup_delay_ms( ) + smtc_modem_hal_get_board_delay_ms( );
+    int8_t  board_delay_ms = smtc_modem_hal_get_radio_tcxo_startup_delay_ms( lr1_beacon_obj->lr1_mac->stack_id ) + smtc_modem_hal_get_board_delay_ms( lr1_beacon_obj->lr1_mac->stack_id );
     int32_t rx_offset_ms;
     smtc_real_get_rx_start_time_offset_ms( lr1_beacon_obj->lr1_mac->real, BEACON_DATA_RATE( ), board_delay_ms,
                                            lr1_beacon_obj->beacon_open_rx_nb_symb, &rx_offset_ms );
