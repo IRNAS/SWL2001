@@ -225,7 +225,11 @@ ral_status_t ral_sx128x_set_sleep( const void* context, const bool retain_config
         }
     }
 
-    return ( ral_status_t ) sx128x_set_sleep( context, false, retain_config );
+    ral_status_t ret = ( ral_status_t ) sx128x_set_sleep( context, false, retain_config );
+
+    ral_sx128x_bsp_set_front_end_off( context );
+
+    return ret;
 }
 
 ral_status_t ral_sx128x_set_standby( const void* context, ral_standby_cfg_t standby_cfg )
@@ -248,7 +252,11 @@ ral_status_t ral_sx128x_set_standby( const void* context, ral_standby_cfg_t stan
         return RAL_STATUS_UNKNOWN_VALUE;
     }
 
-    return ( ral_status_t ) sx128x_set_standby( context, radio_standby_cfg );
+    ral_status_t ret = ( ral_status_t ) sx128x_set_standby( context, radio_standby_cfg );
+
+    ral_sx128x_bsp_set_front_end_off( context );
+
+    return ret;
 }
 
 ral_status_t ral_sx128x_set_fs( const void* context )
@@ -258,11 +266,14 @@ ral_status_t ral_sx128x_set_fs( const void* context )
 
 ral_status_t ral_sx128x_set_tx( const void* context )
 {
+    ral_sx128x_bsp_set_front_end_tx( context );
     return ( ral_status_t ) sx128x_set_tx( context, SX128X_TICK_SIZE_1000_US, 0 );
 }
 
 ral_status_t ral_sx128x_set_rx( const void* context, const uint32_t timeout_in_ms )
 {
+    ral_sx128x_bsp_set_front_end_rx( context );
+
     if( timeout_in_ms == RAL_RX_TIMEOUT_CONTINUOUS_MODE )
     {
         return ( ral_status_t ) sx128x_set_rx( context, SX128X_TICK_SIZE_1000_US, 0xFFFF );
@@ -292,6 +303,7 @@ ral_status_t ral_sx128x_cfg_rx_boosted( const void* context, const bool enable_b
 ral_status_t ral_sx128x_set_rx_tx_fallback_mode( const void* context, const ral_fallback_modes_t ral_fallback_mode )
 {
     bool fallback_mode_is_fs;
+    /* EvaTODO: what to do with front-end module? */
 
     switch( ral_fallback_mode )
     {
@@ -345,11 +357,15 @@ ral_status_t ral_sx128x_set_lora_cad( const void* context )
 
 ral_status_t ral_sx128x_set_tx_cw( const void* context )
 {
+    ral_sx128x_bsp_set_front_end_tx( context );
+
     return ( ral_status_t ) sx128x_set_tx_cw( context );
 }
 
 ral_status_t ral_sx128x_set_tx_infinite_preamble( const void* context )
 {
+    ral_sx128x_bsp_set_front_end_tx( context );
+
     return ( ral_status_t ) sx128x_set_tx_infinite_preamble( context );
 }
 

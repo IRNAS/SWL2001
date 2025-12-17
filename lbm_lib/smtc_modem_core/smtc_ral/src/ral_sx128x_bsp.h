@@ -150,6 +150,35 @@ ral_status_t ral_sx128x_bsp_get_instantaneous_gfsk_rx_power_consumption( const v
 ral_status_t ral_sx128x_bsp_get_instantaneous_lora_rx_power_consumption( const void* context,
     sx128x_reg_mod_t reg_mode, ral_lora_bw_t bw, bool rx_boosted, uint32_t* pwr_consumption_in_ua );
 
+
+/**
+ * @brief Set external front end module for transmission, if defined.
+ *
+ * @param[in] context Chip implementation context
+ */
+void ral_sx128x_bsp_set_front_end_tx(const void* context);
+
+/**
+ * @brief Set external front end module for reception, if defined.
+ *
+ * @param[in] context Chip implementation context
+ */
+void ral_sx128x_bsp_set_front_end_rx(const void* context);
+
+/**
+ * @brief Set bypass for external front end module, if defined.
+ *
+ * @param[in] context Chip implementation context
+ */
+void ral_sx128x_bsp_set_front_end_bypass(const void* context);
+
+/**
+ * @brief Set external front end module off, if defined.
+ *
+ * @param[in] context Chip implementation context
+ */
+void ral_sx128x_bsp_set_front_end_off(const void* context);
+
 #ifdef __cplusplus
 }
 #endif
