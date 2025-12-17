@@ -91,7 +91,7 @@ void region_ru_864_config( smtc_real_t* real );
  * \param [IN]  none
  * \param [OUT] return
  */
-status_lorawan_t region_ru_864_get_next_channel( smtc_real_t* real, uint8_t tx_data_rate, uint32_t* out_tx_frequency,
+status_lorawan_t region_ru_864_get_next_channel( uint8_t stack_id, smtc_real_t* real, uint8_t tx_data_rate, uint32_t* out_tx_frequency,
                                                  uint32_t* out_rx1_frequency, uint8_t* active_channel_nb );
 /**
  * \brief
@@ -99,7 +99,7 @@ status_lorawan_t region_ru_864_get_next_channel( smtc_real_t* real, uint8_t tx_d
  * \param [IN]  none
  * \param [OUT] return
  */
-status_lorawan_t region_ru_864_get_join_next_channel( smtc_real_t* real, uint8_t tx_data_rate,
+status_lorawan_t region_ru_864_get_join_next_channel( uint8_t stack_id, smtc_real_t* real, uint8_t tx_data_rate,
                                                       uint32_t* out_tx_frequency, uint32_t* out_rx1_frequency,
                                                       uint8_t* active_channel_nb );
 /**

@@ -89,10 +89,11 @@ void region_eu_868_config( smtc_real_t* real );
 /**
  * @brief Get the next channel for the future uplink
  *
+ * @param stack_id                 Stack id
  * @param real
  * @return status_lorawan_t
  */
-status_lorawan_t region_eu_868_get_next_channel( smtc_real_t* real, uint8_t tx_data_rate, uint32_t* out_tx_frequency,
+status_lorawan_t region_eu_868_get_next_channel( uint8_t stack_id, smtc_real_t* real, uint8_t tx_data_rate, uint32_t* out_tx_frequency,
                                                  uint32_t* out_rx1_frequency, uint8_t* active_channel_nb );
 
 /**
@@ -101,7 +102,7 @@ status_lorawan_t region_eu_868_get_next_channel( smtc_real_t* real, uint8_t tx_d
  * @param real
  * @return status_lorawan_t
  */
-status_lorawan_t region_eu_868_get_join_next_channel( smtc_real_t* real, uint8_t tx_data_rate,
+status_lorawan_t region_eu_868_get_join_next_channel( uint8_t stack_id, smtc_real_t* real, uint8_t tx_data_rate,
                                                       uint32_t* out_tx_frequency, uint32_t* out_rx1_frequency,
                                                       uint8_t* active_channel_nb );
 

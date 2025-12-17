@@ -64,6 +64,17 @@ extern "C" {
  * --- PUBLIC TYPES ------------------------------------------------------------
  */
 
+/* HW type */
+typedef enum
+{
+	SMTC_MODEM_RADIO_NONE = 0,
+	SMTC_MODEM_RADIO_LR11XX,
+	SMTC_MODEM_RADIO_LR20XX,
+	SMTC_MODEM_RADIO_SX126X,
+	SMTC_MODEM_RADIO_SX127X,
+	SMTC_MODEM_RADIO_SX128X
+} smtc_modem_radio_type_t;
+
 /*
  * -----------------------------------------------------------------------------
  * --- PUBLIC FUNCTIONS PROTOTYPES ---------------------------------------------
@@ -71,11 +82,18 @@ extern "C" {
 
 /**
  * @brief Init the soft modem and set the modem event chosen callback
- * @remark The callback will be called each time an modem event is raised internally
+ * @remark The callback will be called each time an modem event is raised internally - for all stacks
  *
  * @param [in] event_callback User event callback prototype
  */
-void smtc_modem_init( void ( *event_callback )( void ) );
+void smtc_modem_init_common( void ( *event_callback )( void ) );
+
+/**
+ * @brief Init the soft modem for a given stack and radio
+ *
+ * @param [in] stack_id stack identifier
+ */
+void smtc_modem_init( uint8_t stack_id );
 
 /**
  * @brief Run the modem engine
@@ -89,29 +107,44 @@ uint32_t smtc_modem_run_engine( void );
 /**
  * @brief Check if some modem irq flags are pending
  *
+ * @param [in] stack_id stack identifier
+ *
  * @return true if some flags are pending, false otherwise
  */
-bool smtc_modem_is_irq_flag_pending( void );
+bool smtc_modem_is_irq_flag_pending( uint8_t stack_id );
 
 /**
  * @brief Set optional user radio context that can be retrieved in radio drivers hal calls
  *
+ * @param [in] stack_id stack identifier
+ * @param [in] radio_type type of the radio
  * @param [in] radio_ctx pointer on context
  */
-void smtc_modem_set_radio_context( const void* radio_ctx );
+void smtc_modem_set_radio_context( uint8_t stack_id, smtc_modem_radio_type_t radio_type, const void* radio_ctx );
 
 /**
  * @brief Get optional user radio context
  *
  * @returns Radio context reference
  */
-const void* smtc_modem_get_radio_context( void );
+const void* smtc_modem_get_radio_context( uint8_t stack_id );
+
+/**
+ * @brief Get the radio type for a given stack
+ *
+ * @param[in] stack_id
+ * @return
+ */
+smtc_modem_radio_type_t smtc_modem_get_radio_type( uint8_t stack_id );
 
 /**
  * @brief Check if the radio is used by the radio planner
+ *
+ * @param [in] stack_id stack identifier
+ *
  * @returns true if the radio isn't used by the radio planner, false otherwise
 */
-bool smtc_modem_radio_is_free(void);
+bool smtc_modem_radio_is_free(uint8_t stack_id);
 #ifdef __cplusplus
 }
 #endif

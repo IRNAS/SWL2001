@@ -200,7 +200,7 @@ static void lorawan_join_management_service_on_update( void* context )
     }
 
     // In any case store the modem context here to avoid extrem access to nvm near end of battery life
-    modem_store_modem_context( );
+    modem_store_modem_context( STACK_ID_CURRENT_TASK );
 }
 
 static uint8_t lorawan_join_management_service_downlink_handler( lr1_stack_mac_down_data_t* rx_down_data )

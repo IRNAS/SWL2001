@@ -117,21 +117,28 @@ typedef struct modem_downlink_msg_s
  * -----------------------------------------------------------------------------
  * --- PUBLIC FUNCTIONS PROTOTYPES ---------------------------------------------
  */
+
 /*!
- * \brief  Init modem context
+ * \brief  Init modem context - common for all radios and stacks
  * \retval void
  */
-void modem_context_init_light( void ( *callback )( void ), radio_planner_t* rp );
+void modem_context_init_common( void ( *callback )( void ) );
+
+/*!
+ * \brief  Init modem context - stack and rp dependant
+ * \retval void
+ */
+void modem_context_init_light( uint8_t stack_id, radio_planner_t* rp );
 
 /*!
  * \brief  get modem fifo
  * \retval void
  */
-fifo_ctrl_t* modem_context_get_fifo_obj( void );
+fifo_ctrl_t* modem_context_get_fifo_obj( uint8_t stack_id );
 
-uint32_t modem_get_user_alarm( void );
+uint32_t modem_get_user_alarm( uint8_t stack_id );
 
-void modem_set_user_alarm( uint32_t alarm );
+void modem_set_user_alarm( uint8_t stack_id, uint32_t alarm );
 
 /**
  * @brief Set the AppKey of the device
@@ -148,50 +155,61 @@ modem_ctx_rc_t modem_set_appkey( const uint8_t app_key[16], uint8_t stack_id );
  *
  * @param [in] enable
  */
-void modem_set_test_mode_status( bool enable );
+void modem_set_test_mode_status( uint8_t stack_id, bool enable );
 
 /**
  * @brief Get test mode status
  *
+ * @param [in] stack_id Stack identifier
+ *
  * @return true
  * @return false
  */
-bool modem_get_test_mode_status( void );
+bool modem_get_test_mode_status( uint8_t stack_id );
 
 /**
  * @brief set modem radio context
  *
+ * @param [in] stack_id Stack identifier
  * @param [in] radio_ctx Radio context
  */
-void modem_set_radio_ctx( const void* radio_ctx );
+void modem_set_radio_ctx( uint8_t stack_id, const void* radio_ctx );
 
 /**
  * @brief get modem radio context
  *
+ * @param [in] stack_id Stack identifier
+ *
  * @return the pointer on radio context
  */
-const void* modem_get_radio_ctx( void );
+const void* modem_get_radio_ctx( uint8_t stack_id );
 
 /**
  * @brief get modem rp
  *
+ * @param [in] stack_id Stack identifier
+ *
  * @return the pointer on radio planner
  */
-radio_planner_t* modem_get_rp( void );
+radio_planner_t* modem_get_rp( uint8_t stack_id );
 
 /**
  * @brief Suspend radio access
  *
+ * @param [in] stack_id Stack identifier
+ *
  * @return true if operation was ok, false otherwise
  */
-bool modem_suspend_radio_access( void );
+bool modem_suspend_radio_access( uint8_t stack_id );
 
 /**
  * @brief Resume radio access
  *
+ * @param [in] stack_id Stack identifier
+ *
  * @return true if operation was ok, false otherwise
  */
-bool modem_resume_radio_access( void );
+bool modem_resume_radio_access( uint8_t stack_id );
 
 /*!
  * \brief   Compute crc
@@ -224,37 +242,46 @@ uint8_t modem_get_status( uint8_t stack_id );
 /**
  * @brief Load current modem context
  */
-void modem_load_modem_context( void );
+void modem_load_modem_context( uint8_t stack_id );
 
 /**
  * @brief Store modem context
+ *
+ * @param [in] stack_id Stack identifier
  */
-void modem_store_modem_context( void );
+void modem_store_modem_context( uint8_t stack_id );
 
 /**
  * @brief Reset modem context
+ *
+ * @param [in] stack_id Stack identifier
  */
-void modem_reset_modem_context( void );
+void modem_reset_modem_context( uint8_t stack_id );
 
 /**
  * @brief Get current reset counter value
+ *
+ * @param [in] stack_id Stack identifier
  */
-uint32_t modem_get_reset_counter( void );
+uint32_t modem_get_reset_counter( uint8_t stack_id );
 
 /**
  * @brief Set a flag to report all received downlinks to the user with a Downlink event
  *
+ * @param [in] stack_id Stack identifier
  * @param report_all_downlinks
  */
-void modem_set_report_all_downlinks_to_user( bool report_all_downlinks );
+void modem_set_report_all_downlinks_to_user( uint8_t stack_id, bool report_all_downlinks );
 
 /**
  * @brief Get flag status that report all received downlinks to the user with a Downlink event
  *
+ * @param [in] stack_id Stack identifier
+ *
  * @return true
  * @return false
  */
-bool modem_get_report_all_downlinks_to_user( void );
+bool modem_get_report_all_downlinks_to_user( uint8_t stack_id );
 
 #ifdef __cplusplus
 }

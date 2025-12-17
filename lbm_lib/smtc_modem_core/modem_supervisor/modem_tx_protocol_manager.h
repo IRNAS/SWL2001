@@ -71,12 +71,18 @@ typedef enum tx_protocol_manager_tx_type
  * --- PUBLIC FUNCTIONS PROTOTYPES ---------------------------------------------
  */
 
+/**
+ * @brief Init common functionalities of the tx protocol manager
+ *
+ */
+void modem_tx_protocol_manager_init_common( void );
+
 /*!
- * \brief   TPM Initialization
+ * \brief   TPM Initialization by stack and radio planner
  * \remark  This function is called  by the modem's upper layer itself, it shouldn't be useful at the application layer
  * \retval  None
  */
-void modem_tx_protocol_manager_init( radio_planner_t* rp );
+void modem_tx_protocol_manager_init( uint8_t stack_id, radio_planner_t* rp );
 
 /*!
  * @brief tx_protocol_manager_request function is called each time a LoRaWAN transmission will be processed

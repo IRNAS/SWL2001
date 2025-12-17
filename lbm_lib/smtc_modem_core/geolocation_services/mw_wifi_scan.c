@@ -57,6 +57,8 @@
 #include "radio_planner.h"
 #include "radio_planner_hook_id_defs.h"
 
+// EvaTODO: Add multistack support
+
 /*
  * -----------------------------------------------------------------------------
  * --- PRIVATE MACROS-----------------------------------------------------------
@@ -235,8 +237,8 @@ void mw_wifi_scan_services_init( uint8_t* service_id, uint8_t task_id,
     *on_launch_callback          = mw_wifi_scan_service_on_launch;
     *on_update_callback          = mw_wifi_scan_service_on_update;
     *context_callback            = ( void* ) service_id;
-    rp_hook_init( modem_get_rp( ), mw_wifi_task_obj.rp_hook_id, ( void ( * )( void* ) )( wifi_rp_task_done ),
-                  modem_get_rp( ) );
+    rp_hook_init( modem_get_rp( 0 ), mw_wifi_task_obj.rp_hook_id, ( void ( * )( void* ) )( wifi_rp_task_done ),
+                  modem_get_rp( 0 ) );
 
     /* Configuration */
     mw_wifi_task_obj.current_mw_scan_mode = SMTC_MODEM_WIFI_SCAN_MODE_MAC;
@@ -339,7 +341,7 @@ static void mw_wifi_scan_service_on_launch( void* context_callback )
     rp_task.type                           = RP_TASK_TYPE_WIFI_SNIFF;
     rp_task.launch_task_callbacks          = wifi_rp_task_launch;
     rp_radio_params_t fake_rp_radio_params = { 0 };
-    if( rp_task_enqueue( modem_get_rp( ), &rp_task, NULL, 0, &fake_rp_radio_params ) != RP_HOOK_STATUS_OK )
+    if( rp_task_enqueue( modem_get_rp( 0 ), &rp_task, NULL, 0, &fake_rp_radio_params ) != RP_HOOK_STATUS_OK )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "Failed to enqueue RP task for Wi-Fi scan\n" );
         SMTC_MODEM_HAL_PANIC( );
@@ -500,10 +502,10 @@ static void wifi_rp_task_launch( void* context )
     mw_wifi_task_obj.scan_start_time = smtc_modem_hal_get_time_in_ms( );
     SMTC_MODEM_HAL_TRACE_INFO( "Wi-Fi task launch at %u\n", mw_wifi_task_obj.scan_start_time );
 
-    if( mw_radio_configure_for_scan( modem_get_radio_ctx( ) ) == false )
+    if( mw_radio_configure_for_scan( modem_get_radio_ctx( 0 ) ) == false )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "wifi_rp_task_launch: mw_radio_configure_for_scan() failed\n" );
-        rp_task_abort( modem_get_rp( ), RP_HOOK_ID_DIRECT_RP_ACCESS_WIFI );
+        rp_task_abort( modem_get_rp( 0 ), RP_HOOK_ID_DIRECT_RP_ACCESS_WIFI );
         return;
     }
 
@@ -512,7 +514,7 @@ static void wifi_rp_task_launch( void* context )
     if( wifi_settings_idx == -1 )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "Failed to select Wi-Fi scan settings for requested scan mode\n" );
-        rp_task_abort( modem_get_rp( ), RP_HOOK_ID_DIRECT_RP_ACCESS_WIFI );
+        rp_task_abort( modem_get_rp( 0 ), RP_HOOK_ID_DIRECT_RP_ACCESS_WIFI );
         return;
     }
 
@@ -520,10 +522,10 @@ static void wifi_rp_task_launch( void* context )
     smtc_wifi_settings_init( &wifi_settings[wifi_settings_idx] );
 
     /* Start Wi-Fi scan */
-    if( smtc_wifi_start_scan( modem_get_radio_ctx( ) ) != MW_RC_OK )
+    if( smtc_wifi_start_scan( modem_get_radio_ctx( 0 ) ) != MW_RC_OK )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "RP_TASK_WIFI - failed to start Wi-Fi scan, abort task\n" );
-        rp_task_abort( modem_get_rp( ), RP_HOOK_ID_DIRECT_RP_ACCESS_WIFI );
+        rp_task_abort( modem_get_rp( 0 ), RP_HOOK_ID_DIRECT_RP_ACCESS_WIFI );
         /* When aborting the task, the RP will call the end_task_callback() with SMTC_RP_RADIO_ABORTED status. */
         return;
     }
@@ -565,7 +567,7 @@ static void wifi_rp_task_done( void* status )
         wifi_scan_task_done( );
 
         /* Set the radio back to sleep when all radio accesses are done */
-        mw_radio_set_sleep( modem_get_radio_ctx( ) );
+        mw_radio_set_sleep( modem_get_radio_ctx( 0 ) );
 
         /* Notify application */
         send_event( SMTC_MODEM_EVENT_WIFI_SCAN_DONE );
@@ -587,10 +589,10 @@ static void wifi_rp_task_done( void* status )
 static void wifi_scan_task_done( void )
 {
     /* Wi-Fi scan completed, get and display the results */
-    smtc_wifi_get_results( modem_get_radio_ctx( ), &wifi_results );
+    smtc_wifi_get_results( modem_get_radio_ctx( 0 ), &wifi_results );
 
     /* Get scan power consumption */
-    smtc_wifi_get_power_consumption( modem_get_radio_ctx( ), &wifi_results.power_consumption_nah );
+    smtc_wifi_get_power_consumption( modem_get_radio_ctx( 0 ), &wifi_results.power_consumption_nah );
 
     /* Sort results */
     smtc_wifi_sort_results_by_rssi( &wifi_results );

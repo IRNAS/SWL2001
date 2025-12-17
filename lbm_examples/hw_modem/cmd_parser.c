@@ -72,7 +72,7 @@
  * --- PRIVATE CONSTANTS -------------------------------------------------------
  */
 
-#define STACK_ID 0
+#define STACK_ID 0 // EvaTODO: Not yet supported
 #if defined( STM32L073xx )
 #define FILE_UPLOAD_MAX_SIZE 4096
 #else
@@ -1824,7 +1824,7 @@ cmd_parse_status_t parse_cmd( cmd_input_t* cmd_input, cmd_response_t* cmd_output
     }
     case CMD_SUSPEND_RADIO_COMMUNICATIONS:
     {
-        cmd_output->return_code = rc_lut[smtc_modem_suspend_radio_communications( cmd_input->buffer[0] )];
+        cmd_output->return_code = rc_lut[smtc_modem_suspend_radio_communications( STACK_ID, cmd_input->buffer[0] )];
         break;
     }
     case CMD_DM_HANDLE_ALCSYNC:
