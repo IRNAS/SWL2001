@@ -206,10 +206,11 @@ static void rp_task_print( const radio_planner_t* rp, const rp_task_t* task );
  * --- PUBLIC FUNCTIONS DEFINITION ---------------------------------------------
  */
 
-void rp_init( radio_planner_t* rp, const ralf_t* radio )
+void rp_init( uint8_t stack_id, radio_planner_t* rp, const ralf_t* radio )
 {
     memset( rp, 0, sizeof( radio_planner_t ) );
     rp->radio = radio;
+    rp->stack_id = stack_id;
 
     for( int32_t i = 0; i < RP_NB_HOOKS; i++ )
     {
@@ -520,7 +521,7 @@ void rp_callback( radio_planner_t* rp )
             SMTC_MODEM_HAL_TRACE_PRINTF( " radio planner it but no more task activated\n" );
         }
 
-        smtc_modem_hal_set_ant_switch( false );
+        smtc_modem_hal_set_ant_switch( rp->stack_id, false );
         // Shut Down the TCXO
         smtc_modem_hal_stop_radio_tcxo( );
     }
@@ -687,13 +688,13 @@ static void rp_task_arbiter( radio_planner_t* rp, const char* caller_func_name )
 
                     rp->radio_irq_flag = false;
 
-                    smtc_modem_hal_set_ant_switch( false );
+                    smtc_modem_hal_set_ant_switch( rp->stack_id, false );
                     // Shut Down the TCXO
                     smtc_modem_hal_stop_radio_tcxo( );
 
                     rp_consumption_statistics_updated( rp, rp->radio_task_id, smtc_modem_hal_get_time_in_ms( ) );
                     rp->radio_task_id = rp->priority_task.hook_id;
-                    if( smtc_modem_external_stack_currently_use_radio( ) == true )
+                    if( smtc_modem_external_stack_currently_use_radio( rp->stack_id ) == true )
                     {
                         rp->tasks[rp->radio_task_id].state = RP_TASK_STATE_ABORTED;
                     }
@@ -707,7 +708,7 @@ static void rp_task_arbiter( radio_planner_t* rp, const char* caller_func_name )
             else
             {  // Radio is sleeping start priority task on radio
                 rp->radio_task_id = rp->priority_task.hook_id;
-                if( smtc_modem_external_stack_currently_use_radio( ) == true )
+                if( smtc_modem_external_stack_currently_use_radio( rp->stack_id ) == true )
                 {
                     rp->tasks[rp->radio_task_id].state = RP_TASK_STATE_ABORTED;
                 }
@@ -1084,8 +1085,8 @@ rp_hook_status_t rp_get_pkt_payload( radio_planner_t* rp, const rp_task_t* task 
 
 static void rp_set_alarm( radio_planner_t* rp, const uint32_t alarm_in_ms )
 {
-    smtc_modem_hal_stop_timer( );
-    smtc_modem_hal_start_timer( alarm_in_ms, rp_timer_irq_callback, rp );
+    smtc_modem_hal_stop_timer( rp->stack_id );
+    smtc_modem_hal_start_timer( rp->stack_id, alarm_in_ms, rp_timer_irq_callback, rp );
 }
 
 static void rp_timer_irq( radio_planner_t* rp )
@@ -1228,7 +1229,7 @@ static void rp_consumption_statistics_updated( radio_planner_t* rp, const uint8_
         rp_stats_update( &rp->stats, time, hook_id, micro_ampere_radio );
         if( tx_timestamp_tmp != 0 )
         {
-            smtc_duty_cycle_sum( tx_freq_hz, rp->stats.tx_last_toa_ms[hook_id] );
+            smtc_duty_cycle_sum( rp->stack_id, tx_freq_hz, rp->stats.tx_last_toa_ms[hook_id] );
         }
     }
 }

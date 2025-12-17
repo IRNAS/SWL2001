@@ -102,7 +102,8 @@ smtc_modem_return_code_t mw_gnss_almanac_full_update( const uint8_t* almanac, ui
         lr11xx_status_t err;
         for( int i = 0; i < almanac_size; i += LR11XX_GNSS_SINGLE_ALMANAC_WRITE_SIZE )
         {
-            err = lr11xx_gnss_almanac_update( modem_get_radio_ctx( ), almanac + i, 1 );
+            //EvaTODO update with stack_id
+	    err = lr11xx_gnss_almanac_update( modem_get_radio_ctx( 0 ), almanac + i, 1 );
             if( err != LR11XX_STATUS_OK )
             {
                 SMTC_MODEM_HAL_TRACE_ERROR( "mw_gnss_almanac_full_update: failed at block %d\n", i );
@@ -142,7 +143,8 @@ static uint32_t get_almanac_crc( void )
     lr11xx_gnss_context_status_bytestream_t context_status_bytestream;
     lr11xx_gnss_context_status_t            context_status;
 
-    err = lr11xx_gnss_get_context_status( modem_get_radio_ctx( ), context_status_bytestream );
+    // EvaTODO update with stack_id
+    err = lr11xx_gnss_get_context_status( modem_get_radio_ctx( 0 ), context_status_bytestream );
     if( err != LR11XX_STATUS_OK )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "Failed to get gnss context status\n" );

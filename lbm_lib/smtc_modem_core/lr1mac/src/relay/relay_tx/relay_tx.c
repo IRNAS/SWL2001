@@ -171,7 +171,7 @@ bool smtc_relay_tx_init( uint8_t relay_stack_id, radio_planner_t* rp, smtc_real_
     {
         SMTC_MODEM_HAL_PANIC( "smtc_relay_tx_init bad init\n" );
     }
-    if( smtc_modem_hal_get_radio_tcxo_startup_delay_ms( ) >= DELAY_WOR_TO_WORACK_MS )
+    if( smtc_modem_hal_get_radio_tcxo_startup_delay_ms( relay_stack_id ) >= DELAY_WOR_TO_WORACK_MS )
     {
         SMTC_MODEM_HAL_PANIC( "TCXO delay not compatible with relay mode \n" );
     }
@@ -366,8 +366,8 @@ bool smtc_relay_tx_prepare_wor( uint8_t relay_stack_id, uint32_t target_time, co
                 // If last channel used was the default -> remove half cad period
                 ref_timestamp -= cad_period_ms >> 1;
             }
-            smtc_duty_cycle_update( );
-            if( smtc_duty_cycle_is_channel_free( infos->relay_tx_config.second_ch.freq_hz ) == false )
+            smtc_duty_cycle_update( relay_stack_id);
+            if( smtc_duty_cycle_is_channel_free( relay_stack_id, infos->relay_tx_config.second_ch.freq_hz ) == false )
             {
                 SMTC_MODEM_HAL_TRACE_PRINTF( "no more duty cycle for second_ch wor channel\n" );
                 return false;
@@ -486,7 +486,7 @@ bool smtc_relay_tx_prepare_wor( uint8_t relay_stack_id, uint32_t target_time, co
     }
 
     wor_tx->freq_hz        = conf->freq_hz;
-    wor_tx->target_time_ms = infos->last_timestamp_ms - smtc_modem_hal_get_radio_tcxo_startup_delay_ms( );
+    wor_tx->target_time_ms = infos->last_timestamp_ms - smtc_modem_hal_get_radio_tcxo_startup_delay_ms( relay_stack_id );
     wor_tx->dr             = conf->dr;
     smtc_real_lora_dr_to_sf_bw( infos->real, conf->dr, &wor_tx->sf, ( lr1mac_bandwidth_t* ) &wor_tx->bw );
     return true;
@@ -598,7 +598,7 @@ int32_t smtc_relay_tx_free_duty_cycle_ms_get( uint8_t relay_stack_id )
         tx_freq_list = infos->relay_tx_config.second_ch.freq_hz;
     }
     int32_t relay_tx_duty_cycle =
-        smtc_relay_tx_is_enable( relay_stack_id ) ? smtc_duty_cycle_get_next_free_time_ms( 1, &tx_freq_list ) : 0;
+        smtc_relay_tx_is_enable( relay_stack_id ) ? smtc_duty_cycle_get_next_free_time_ms( relay_stack_id, 1, &tx_freq_list ) : 0;
     SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG( "relay_tx_duty_cycle = %d\n", relay_tx_duty_cycle );
     return ( relay_tx_duty_cycle );
 }
@@ -671,7 +671,7 @@ static void relay_tx_callback_rp( uint8_t* stack_id )
                 ( infos->last_ch_idx == 0 ) ? &infos->default_ch_config : &( infos->relay_tx_config.second_ch );
 
             wor_ack.start_time_ms =
-                infos->time_tx_done + DELAY_WOR_TO_WORACK_MS - smtc_modem_hal_get_radio_tcxo_startup_delay_ms( );
+                infos->time_tx_done + DELAY_WOR_TO_WORACK_MS - smtc_modem_hal_get_radio_tcxo_startup_delay_ms( relay_stack_id );
             wor_ack.toa         = infos->toa_ack[infos->last_ch_idx];
             wor_ack.freq_hz     = conf->ack_freq_hz;
             wor_ack.payload     = infos->buffer;
@@ -699,9 +699,9 @@ static void relay_tx_callback_rp( uint8_t* stack_id )
             }
             infos->target_timer_lr1 =
                 infos->time_tx_done + infos->toa_ack[infos->last_ch_idx] + DELAY_WOR_TO_WORACK_MS +
-                DELAY_WORACK_TO_UPLINK_MS;  // don't add "- smtc_modem_hal_get_radio_tcxo_startup_delay_ms( )" due to
+                DELAY_WORACK_TO_UPLINK_MS;  // don't add "- smtc_modem_hal_get_radio_tcxo_startup_delay_ms( relay_stack_id)" due to
                                             // the fact that lr1mac do it by itself-
-                                            // smtc_modem_hal_get_radio_tcxo_startup_delay_ms( );
+                                            // smtc_modem_hal_get_radio_tcxo_startup_delay_ms( relay_stack_id);
         }
         else
         {

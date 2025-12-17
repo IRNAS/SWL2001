@@ -80,7 +80,7 @@
  * --- PRIVATE MACROS-----------------------------------------------------------
  */
 
-#define TEST_STACK_ID_0 0
+#define TEST_STACK_ID_0 0 // EvaTODO: Only one stack supported for test mode
 /*
  * -----------------------------------------------------------------------------
  * --- PRIVATE CONSTANTS -------------------------------------------------------
@@ -148,7 +148,7 @@ void test_mode_cw_callback_for_rp( void* rp_void );
 
 smtc_modem_return_code_t smtc_modem_test_start( void )
 {
-    if( modem_get_test_mode_status( ) == true )
+    if( modem_get_test_mode_status(TEST_STACK_ID_0 ) == true )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TST MODE: ALREADY STARTED\n" );
         return SMTC_MODEM_RC_BUSY;
@@ -160,13 +160,13 @@ smtc_modem_return_code_t smtc_modem_test_start( void )
         return SMTC_MODEM_RC_FAIL;
     }
 
-    modem_set_test_mode_status( true );
+    modem_set_test_mode_status(TEST_STACK_ID_0, true );
     SMTC_MODEM_HAL_TRACE_INFO( "TST MODE: START\n" );
     memset( &modem_test_context, 0, sizeof( modem_test_context_t ) );
     memset( &rp_task, 0, sizeof( rp_task_t ) );
     memset( &rp_radio_params, 0, sizeof( rp_radio_params_t ) );
 
-    modem_test_context.rp = modem_get_rp( );
+    modem_test_context.rp = modem_get_rp( TEST_STACK_ID_0 );
     // modem_test_context.lr1_mac_obj = lorawan_api_stack_mac_get( TEST_STACK_ID_0 );
     modem_test_context.hook_id = RP_HOOK_ID_TEST_MODE;
 
@@ -181,7 +181,7 @@ smtc_modem_return_code_t smtc_modem_test_start( void )
 
 smtc_modem_return_code_t smtc_modem_test_stop( void )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -192,7 +192,7 @@ smtc_modem_return_code_t smtc_modem_test_stop( void )
         return SMTC_MODEM_RC_FAIL;
     }
     rp_release_hook( modem_test_context.rp, modem_test_context.hook_id );
-    modem_set_test_mode_status( false );
+    modem_set_test_mode_status(TEST_STACK_ID_0, false );
 
     // Re enable failsafe on radio planner
     rp_disable_failsafe( modem_test_context.rp, false );
@@ -202,7 +202,7 @@ smtc_modem_return_code_t smtc_modem_test_stop( void )
 
 smtc_modem_return_code_t smtc_modem_test_tx_hop( void )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -212,7 +212,7 @@ smtc_modem_return_code_t smtc_modem_test_tx_hop( void )
 
 smtc_modem_return_code_t smtc_modem_test_nop( bool reset_radio )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -236,7 +236,7 @@ smtc_modem_return_code_t smtc_modem_test_tx_lora( uint8_t* payload, uint8_t payl
                                                   bool invert_iq, bool crc_is_on, ral_lora_pkt_len_modes_t header_type,
                                                   uint32_t preamble_size, uint32_t nb_of_tx, uint32_t delay_ms )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -308,7 +308,7 @@ smtc_modem_return_code_t smtc_modem_test_tx_lora( uint8_t* payload, uint8_t payl
 smtc_modem_return_code_t smtc_modem_test_tx_fsk( uint8_t* payload, uint8_t payload_length, uint32_t frequency_hz,
                                                  int8_t tx_power_dbm, uint32_t nb_of_tx, uint32_t delay_ms )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -372,7 +372,7 @@ smtc_modem_return_code_t smtc_modem_test_tx_lrfhss( uint8_t* payload, uint8_t pa
                                                     lr_fhss_v1_grid_t tx_grid, bool enable_hopping, uint32_t nb_of_tx,
                                                     uint32_t delay_ms )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -450,7 +450,7 @@ smtc_modem_return_code_t smtc_modem_test_tx_lrfhss( uint8_t* payload, uint8_t pa
 
 smtc_modem_return_code_t smtc_modem_test_tx_cw( uint32_t frequency_hz, int8_t tx_power_dbm )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -511,7 +511,7 @@ smtc_modem_return_code_t smtc_modem_test_rx_lora( uint32_t frequency_hz, ral_lor
                                                   bool invert_iq, bool crc_is_on, ral_lora_pkt_len_modes_t header_type,
                                                   uint32_t preamble_size, uint8_t symb_nb_timeout )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -579,7 +579,7 @@ smtc_modem_return_code_t smtc_modem_test_rx_lora( uint32_t frequency_hz, ral_lor
 
 smtc_modem_return_code_t smtc_modem_test_rx_fsk_continuous( uint32_t frequency_hz )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -641,7 +641,7 @@ smtc_modem_return_code_t smtc_modem_test_rx_fsk_continuous( uint32_t frequency_h
 
 smtc_modem_return_code_t smtc_modem_test_get_nb_rx_packets( uint32_t* nb_rx_packets )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -652,7 +652,7 @@ smtc_modem_return_code_t smtc_modem_test_get_nb_rx_packets( uint32_t* nb_rx_pack
 smtc_modem_return_code_t smtc_modem_test_get_last_rx_packets( int16_t* rssi, int16_t* snr, uint8_t* rx_payload,
                                                               uint8_t* rx_payload_length )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -666,7 +666,7 @@ smtc_modem_return_code_t smtc_modem_test_get_last_rx_packets( int16_t* rssi, int
 
 smtc_modem_return_code_t smtc_modem_test_rssi_lbt( uint32_t frequency_hz, uint32_t bw_hz, uint16_t time_ms )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -692,7 +692,7 @@ smtc_modem_return_code_t smtc_modem_test_rssi_lbt( uint32_t frequency_hz, uint32
 
 smtc_modem_return_code_t smtc_modem_test_get_rssi( int8_t* rssi )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -720,7 +720,7 @@ void modem_test_set_rssi( int16_t rssi )
 
 smtc_modem_return_code_t smtc_modem_test_radio_reset( void )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -737,7 +737,7 @@ smtc_modem_return_code_t smtc_modem_test_radio_reset( void )
     {
         return SMTC_MODEM_RC_FAIL;
     }
-    smtc_modem_hal_set_ant_switch( false );
+    smtc_modem_hal_set_ant_switch( TEST_STACK_ID_0, false );
     smtc_modem_hal_stop_radio_tcxo( );
 
     return SMTC_MODEM_RC_OK;
@@ -746,7 +746,7 @@ smtc_modem_return_code_t smtc_modem_test_radio_reset( void )
 smtc_modem_return_code_t smtc_modem_test_direct_radio_write( uint8_t* command, uint16_t command_length, uint8_t* data,
                                                              uint16_t data_length )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -778,7 +778,7 @@ smtc_modem_return_code_t smtc_modem_test_direct_radio_write( uint8_t* command, u
 smtc_modem_return_code_t smtc_modem_test_direct_radio_read( uint8_t* command, uint16_t command_length, uint8_t* data,
                                                             uint16_t data_length )
 {
-    if( modem_get_test_mode_status( ) == false )
+    if( modem_get_test_mode_status( TEST_STACK_ID_0 ) == false )
     {
         SMTC_MODEM_HAL_TRACE_WARNING( "TEST FUNCTION CANNOT BE CALLED: NOT IN TEST MODE\n" );
         return SMTC_MODEM_RC_INVALID;
@@ -999,7 +999,7 @@ void test_mode_cw_callback_for_rp( void* rp_void )
     radio_planner_t* rp = ( radio_planner_t* ) rp_void;
     uint8_t          id = rp->radio_task_id;
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ralf_setup_lora( rp->radio, &rp->radio_params[id].tx.lora ) == RAL_STATUS_OK );
-    smtc_modem_hal_set_ant_switch( true );
+    smtc_modem_hal_set_ant_switch( TEST_STACK_ID_0, true );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_tx_cw( &( rp->radio->ral ) ) == RAL_STATUS_OK );
 }
 

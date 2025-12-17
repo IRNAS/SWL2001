@@ -1212,7 +1212,7 @@ static dm_rc_t dm_reset( cloud_dm_t* ctx, dm_reset_code_t reset_code, uint16_t r
 {
     dm_rc_t ret = DM_OK;
 
-    uint32_t nb_reset = modem_get_reset_counter( );
+    uint32_t nb_reset = modem_get_reset_counter( ctx->stack_id);
 
     if( reset_session == nb_reset )
     {
@@ -1406,7 +1406,7 @@ static bool dm_status_payload( cloud_dm_t* ctx, uint8_t stack_id, uint8_t* dm_up
                 break;
             case DM_INFO_CHARGE: {
                 uint32_t charge;
-                smtc_modem_get_charge( &charge );
+                smtc_modem_get_charge(stack_id, &charge );
                 *p_tmp         = charge & 0xFF;
                 *( p_tmp + 1 ) = ( charge >> 8 ) & 0xFF;
                 break;
@@ -1486,7 +1486,7 @@ static bool dm_status_payload( cloud_dm_t* ctx, uint8_t stack_id, uint8_t* dm_up
 
                 break;
             case DM_INFO_RSTCOUNT: {
-                uint32_t nb_reset = modem_get_reset_counter( );
+                uint32_t nb_reset = modem_get_reset_counter( stack_id );
                 *p_tmp            = nb_reset & 0xFF;
                 *( p_tmp + 1 )    = nb_reset >> 8;
                 break;
@@ -1509,7 +1509,9 @@ static bool dm_status_payload( cloud_dm_t* ctx, uint8_t stack_id, uint8_t* dm_up
             case DM_INFO_CHIPEUI: {
                 uint8_t p_tmp_chip_eui[8] = { 0 };
 #if defined( USE_LR11XX_CE )
-                lr11xx_system_read_uid( modem_get_radio_ctx( ), ( uint8_t* ) &p_tmp_chip_eui );
+		if( modem_get_radio_type( stack_id ) == MODEM_RADIO_TYPE_LR11XX ) {
+                    lr11xx_system_read_uid( modem_get_radio_ctx( stack_id ), ( uint8_t* ) &p_tmp_chip_eui );
+		}
 #endif  // USE_LR11XX_CE
                 memcpy1_r( p_tmp, p_tmp_chip_eui, 8 );
                 break;

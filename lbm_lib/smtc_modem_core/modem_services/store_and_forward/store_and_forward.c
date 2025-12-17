@@ -297,7 +297,7 @@ store_and_forward_rc_t store_and_forward_add_data( uint8_t fport, const uint8_t*
         SMTC_MODEM_HAL_TRACE_WARNING( "store and forward oldest data will be lost\n" );
     }
 
-    if( fifo_ctrl_set( &ctx->fifo_ctrl_obj, data, data_len, &metadata, sizeof( store_and_forward_metadata_t ) ) !=
+    if( fifo_ctrl_set( stack_id, &ctx->fifo_ctrl_obj, data, data_len, &metadata, sizeof( store_and_forward_metadata_t ) ) !=
         FIFO_STATUS_OK )
     {
         SMTC_MODEM_HAL_TRACE_PRINTF( "store and forward fifo problem\n" );
@@ -364,7 +364,7 @@ static void store_and_forward_service_on_launch( void* service_id )
 
     if( ( store_and_forward_obj[idx].sending_data_len == 0 ) && ( nb_of_data > 0 ) )
     {
-        fifo_ctrl_get( &store_and_forward_obj[idx].fifo_ctrl_obj, store_and_forward_obj[idx].sending_data,
+        fifo_ctrl_get( stack_id, &store_and_forward_obj[idx].fifo_ctrl_obj, store_and_forward_obj[idx].sending_data,
                        &store_and_forward_obj[idx].sending_data_len, SMTC_MODEM_MAX_LORAWAN_PAYLOAD_LENGTH,
                        &store_and_forward_obj[idx].sending_metadata, &store_and_forward_obj[idx].sending_metadata_len,
                        sizeof( store_and_forward_metadata_t ) );

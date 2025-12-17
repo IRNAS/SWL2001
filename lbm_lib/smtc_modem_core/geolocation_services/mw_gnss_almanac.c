@@ -59,6 +59,8 @@
 #include "lr11xx_system.h"
 #include "lr11xx_gnss.h"
 
+// EvaTODO: Add multistack support
+
 /*
  * -----------------------------------------------------------------------------
  * --- PRIVATE MACROS-----------------------------------------------------------
@@ -105,7 +107,7 @@
     do                                                                              \
     {                                                                               \
         mw_gnss_almanac_task_obj.self_aborted = true;                               \
-        rp_task_abort( modem_get_rp( ), RP_HOOK_ID_DIRECT_RP_ACCESS_GNSS_ALMANAC ); \
+        rp_task_abort( modem_get_rp( 0 ), RP_HOOK_ID_DIRECT_RP_ACCESS_GNSS_ALMANAC ); \
         return;                                                                     \
     } while( 0 )
 
@@ -381,8 +383,8 @@ void mw_gnss_almanac_services_init( uint8_t* service_id, uint8_t task_id,
     *on_launch_callback                  = mw_gnss_almanac_service_on_launch;
     *on_update_callback                  = mw_gnss_almanac_service_on_update;
     *context_callback                    = ( void* ) service_id;
-    rp_hook_init( modem_get_rp( ), mw_gnss_almanac_task_obj.rp_hook_id,
-                  ( void ( * )( void* ) )( gnss_almanac_rp_task_done ), modem_get_rp( ) );
+    rp_hook_init( modem_get_rp( 0 ), mw_gnss_almanac_task_obj.rp_hook_id,
+                  ( void ( * )( void* ) )( gnss_almanac_rp_task_done ), modem_get_rp( 0 ) );
 
     /* Configuration */
     mw_gnss_almanac_task_obj.constellations_enabled = LR11XX_GNSS_GPS_MASK | LR11XX_GNSS_BEIDOU_MASK;
@@ -437,7 +439,7 @@ void mw_gnss_almanac_remove_task( void )
     }
 
     /* Remove any pending task in radio planner */
-    radio_planner_t* rp = modem_get_rp( );
+    radio_planner_t* rp = modem_get_rp( 0 );
     if( rp == NULL )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "mw_gnss_almanac_remove_task: Failed to get RP\n" );
@@ -446,7 +448,7 @@ void mw_gnss_almanac_remove_task( void )
     if( rp->tasks[mw_gnss_almanac_task_obj.rp_hook_id].state != RP_TASK_STATE_FINISHED )
     {
         mw_gnss_almanac_task_obj.self_aborted = true;
-        rp_task_abort( modem_get_rp( ), mw_gnss_almanac_task_obj.rp_hook_id );
+        rp_task_abort( modem_get_rp( 0 ), mw_gnss_almanac_task_obj.rp_hook_id );
         SMTC_MODEM_HAL_TRACE_PRINTF( "mw_gnss_almanac_remove_task: aborted RP task_id %d\n",
                                      mw_gnss_almanac_task_obj.rp_hook_id );
     }
@@ -539,7 +541,7 @@ static void mw_gnss_almanac_service_on_launch( void* context_callback )
     rp_task.type                           = RP_TASK_TYPE_GNSS_SNIFF;
     rp_task.launch_task_callbacks          = gnss_almanac_rp_task_launch;
     rp_radio_params_t fake_rp_radio_params = { 0 };
-    if( rp_task_enqueue( modem_get_rp( ), &rp_task, NULL, 0, &fake_rp_radio_params ) != RP_HOOK_STATUS_OK )
+    if( rp_task_enqueue( modem_get_rp( 0 ), &rp_task, NULL, 0, &fake_rp_radio_params ) != RP_HOOK_STATUS_OK )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "Failed to enqueue RP task for GNSS almanac demodulation\n" );
         SMTC_MODEM_HAL_PANIC( );
@@ -644,7 +646,7 @@ static void mw_gnss_almanac_next_rp( uint32_t delay_ms )
     rp_task.type                           = RP_TASK_TYPE_GNSS_SNIFF;
     rp_task.launch_task_callbacks          = gnss_almanac_rp_task_launch;
     rp_radio_params_t fake_rp_radio_params = { 0 };
-    if( rp_task_enqueue( modem_get_rp( ), &rp_task, NULL, 0, &fake_rp_radio_params ) != RP_HOOK_STATUS_OK )
+    if( rp_task_enqueue( modem_get_rp( 0 ), &rp_task, NULL, 0, &fake_rp_radio_params ) != RP_HOOK_STATUS_OK )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "Failed to enqueue RP task for next GNSS almanac demodulation\n" );
         SMTC_MODEM_HAL_PANIC( );
@@ -669,7 +671,7 @@ static void gnss_almanac_rp_task_launch( void* context )
     mw_gnss_almanac_task_obj.pending_evt_update_done = false;
 
     /* WARNING: Read time at least once every 24h to let the LR11xx handle clock roll-over */
-    lr11xx_status = lr11xx_gnss_read_time( modem_get_radio_ctx( ), &lr11xx_time );
+    lr11xx_status = lr11xx_gnss_read_time( modem_get_radio_ctx( 0 ), &lr11xx_time );
     if( lr11xx_status != LR11XX_STATUS_OK )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "gnss_almanac_rp_task_launch: lr11xx_gnss_read_time failed\n" );
@@ -693,7 +695,7 @@ static void gnss_almanac_rp_task_launch( void* context )
             if( ( now_s - mw_gnss_almanac_task_obj.last_read_time_s ) > ALMANAC_READ_TIME_THRESHOLD_MAX )
             {
                 SMTC_MODEM_HAL_TRACE_WARNING( "Too long since last read_time: reset LR11xx time\n" );
-                lr11xx_status = lr11xx_gnss_reset_time( modem_get_radio_ctx( ) );
+                lr11xx_status = lr11xx_gnss_reset_time( modem_get_radio_ctx( 0 ) );
                 if( lr11xx_status != LR11XX_STATUS_OK )
                 {
                     SMTC_MODEM_HAL_TRACE_ERROR( "gnss_almanac_rp_task_launch: lr11xx_gnss_reset_time failed\n" );
@@ -705,14 +707,14 @@ static void gnss_almanac_rp_task_launch( void* context )
     }
 
     /* Selected constellation(s) and get corresponding almanac status */
-    lr11xx_status = lr11xx_gnss_set_constellations_to_use( modem_get_radio_ctx( ),
+    lr11xx_status = lr11xx_gnss_set_constellations_to_use( modem_get_radio_ctx( 0 ),
                                                            mw_gnss_almanac_task_obj.constellations_enabled );
     if( lr11xx_status != LR11XX_STATUS_OK )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "gnss_almanac_rp_task_launch: lr11xx_gnss_set_constellations_to_use failed\n" );
         RP_TASK_ABORT_AND_RETURN( );
     }
-    lr11xx_status = lr11xx_gnss_read_almanac_status( modem_get_radio_ctx( ), &almanac_status );
+    lr11xx_status = lr11xx_gnss_read_almanac_status( modem_get_radio_ctx( 0 ), &almanac_status );
     if( lr11xx_status != LR11XX_STATUS_OK )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "gnss_almanac_rp_task_launch: lr11xx_gnss_read_almanac_status failed\n" );
@@ -738,7 +740,7 @@ static void gnss_almanac_rp_task_launch( void* context )
     else /* launch scan for almanac */
     {
         /* Prepare for scan */
-        lr11xx_status = lr11xx_system_set_dio_irq_params( modem_get_radio_ctx( ), LR11XX_SYSTEM_IRQ_GNSS_SCAN_DONE,
+        lr11xx_status = lr11xx_system_set_dio_irq_params( modem_get_radio_ctx( 0 ), LR11XX_SYSTEM_IRQ_GNSS_SCAN_DONE,
                                                           LR11XX_SYSTEM_IRQ_NONE );
         if( lr11xx_status != LR11XX_STATUS_OK )
         {
@@ -749,7 +751,7 @@ static void gnss_almanac_rp_task_launch( void* context )
         /* Configure the board for almanac scan */
         geolocation_bsp_gnss_prescan_actions( );
 
-        if( mw_radio_configure_for_scan( modem_get_radio_ctx( ) ) == false )
+        if( mw_radio_configure_for_scan( modem_get_radio_ctx( 0 ) ) == false )
         {
             SMTC_MODEM_HAL_TRACE_ERROR( "gnss_almanac_rp_task_launch: mw_radio_configure_for_scan() failed\n" );
             RP_TASK_ABORT_AND_RETURN( );
@@ -758,7 +760,7 @@ static void gnss_almanac_rp_task_launch( void* context )
         SMTC_MODEM_HAL_TRACE_INFO( "=> launch almanac update from sat for %s\n",
                                    smtc_gnss_constellation_enum2str( mw_gnss_almanac_next_update.constellation ) );
         lr11xx_status = lr11xx_gnss_almanac_update_from_sat(
-            modem_get_radio_ctx( ), mw_gnss_almanac_next_update.constellation, LR11XX_GNSS_OPTION_LOW_EFFORT );
+            modem_get_radio_ctx( 0 ), mw_gnss_almanac_next_update.constellation, LR11XX_GNSS_OPTION_LOW_EFFORT );
         if( lr11xx_status != LR11XX_STATUS_OK )
         {
             SMTC_MODEM_HAL_TRACE_ERROR( "gnss_almanac_rp_task_launch: lr11xx_gnss_almanac_update_from_sat() failed\n" );
@@ -820,7 +822,7 @@ static void gnss_almanac_rp_task_done( void* status )
         SMTC_MODEM_HAL_TRACE_PRINTF( "ALMANAC: RP_STATUS_GNSS_SCAN_DONE\n" );
 
         mw_status = gnss_almanac_task_done( );
-        mw_radio_set_sleep( modem_get_radio_ctx( ) ); /* Set the radio back to sleep when all radio accesses are done */
+        mw_radio_set_sleep( modem_get_radio_ctx( 0 ) ); /* Set the radio back to sleep when all radio accesses are done */
         if( mw_status != MW_RC_OK )
         {
             SMTC_MODEM_HAL_TRACE_ERROR( "gnss_almanac_task_done Failed\n" );
@@ -855,7 +857,7 @@ static mw_return_code_t gnss_almanac_task_done( void )
     lr11xx_gnss_solver_assistance_position_t         aiding_pos;
 
     /* Get power consumption of last almanac demod */
-    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_cumulative_timing( modem_get_radio_ctx( ), &cumulative_timing ) ==
+    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_cumulative_timing( modem_get_radio_ctx( 0 ), &cumulative_timing ) ==
                           LR11XX_STATUS_OK );
     GNSS_ALMANAC_TRACE_PRINTF_DEBUG( "Cumulative timings: %u s\n", cumulative_timing.total / 32768 );
     /* Update statistics */
@@ -869,7 +871,7 @@ static mw_return_code_t gnss_almanac_task_done( void )
     GNSS_ALMANAC_TRACE_PRINTF_DEBUG( "Almanac: power consumption: %u nah\n", power_consumption_nah );
 
     /* Get almanac demodulation status */
-    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_demod_status( modem_get_radio_ctx( ), &demod_status, &demod_info ) ==
+    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_demod_status( modem_get_radio_ctx( 0 ), &demod_status, &demod_info ) ==
                           LR11XX_STATUS_OK );
     if( demod_status < 0 )
     {
@@ -885,11 +887,11 @@ static mw_return_code_t gnss_almanac_task_done( void )
     }
 
     /* Get detected SVs (for info) */
-    MW_RETURN_ON_FAILURE( lr11xx_gnss_get_nb_detected_satellites( modem_get_radio_ctx( ), &nb_detected_svs ) ==
+    MW_RETURN_ON_FAILURE( lr11xx_gnss_get_nb_detected_satellites( modem_get_radio_ctx( 0 ), &nb_detected_svs ) ==
                           LR11XX_STATUS_OK );
     if( nb_detected_svs > 0 )
     {
-        MW_RETURN_ON_FAILURE( lr11xx_gnss_get_detected_satellites( modem_get_radio_ctx( ), nb_detected_svs,
+        MW_RETURN_ON_FAILURE( lr11xx_gnss_get_detected_satellites( modem_get_radio_ctx( 0 ), nb_detected_svs,
                                                                    info_svs ) == LR11XX_STATUS_OK );
     }
     GNSS_ALMANAC_TRACE_PRINTF_DEBUG( "ALMANAC SCAN DONE: %u SV detected:\n", nb_detected_svs );
@@ -899,7 +901,7 @@ static mw_return_code_t gnss_almanac_task_done( void )
     }
 
     /* Check if an aiding position could be computed by the doppler solver (indicates level of almanac update) */
-    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_doppler_solver_result( modem_get_radio_ctx( ), &doppler_solver_results ) ==
+    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_doppler_solver_result( modem_get_radio_ctx( 0 ), &doppler_solver_results ) ==
                           LR11XX_STATUS_OK );
     GNSS_ALMANAC_TRACE_PRINTF_DEBUG(
         "Doppler solver result after almanac demod: %s\n",
@@ -907,18 +909,18 @@ static mw_return_code_t gnss_almanac_task_done( void )
     mw_gnss_almanac_update_status.last_doppler_solver_status = doppler_solver_results.error_code;
 
     /* Get current assistance position (could have been reset above) */
-    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_assistance_position( modem_get_radio_ctx( ), &aiding_pos ) ==
+    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_assistance_position( modem_get_radio_ctx( 0 ), &aiding_pos ) ==
                           LR11XX_STATUS_OK );
     smtc_gnss_trace_print_position( "Almanac: Assistance Position: ", &aiding_pos );
 
     /* Select the constellations enabled for almanac demod */
     /* lr11xx_gnss_read_almanac_status() will ignore constellation not selected */
-    MW_RETURN_ON_FAILURE( lr11xx_gnss_set_constellations_to_use( modem_get_radio_ctx( ),
+    MW_RETURN_ON_FAILURE( lr11xx_gnss_set_constellations_to_use( modem_get_radio_ctx( 0 ),
                                                                  mw_gnss_almanac_task_obj.constellations_enabled ) ==
                           LR11XX_STATUS_OK );
 
     /* Get almanac status for selected constellation(s) */
-    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_almanac_status( modem_get_radio_ctx( ), &almanac_status ) ==
+    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_almanac_status( modem_get_radio_ctx( 0 ), &almanac_status ) ==
                           LR11XX_STATUS_OK );
     print_almanac_status( &almanac_status );
 

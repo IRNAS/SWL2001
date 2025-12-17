@@ -134,6 +134,7 @@ uint16_t fifo_ctrl_get_free_space( const fifo_ctrl_t* ctrl );
 /**
  * @brief Read oldest element in fifo
  *
+ * @param stack_id              Stack identifier
  * @param ctrl                  fifo manager
  * @param buffer                buffer to save data
  * @param data_len              length of read data
@@ -143,7 +144,7 @@ uint16_t fifo_ctrl_get_free_space( const fifo_ctrl_t* ctrl );
  * @param metadata_buffer_size  size of metadata buffer
  * @return fifo_return_status_t return status
  */
-fifo_return_status_t fifo_ctrl_get( fifo_ctrl_t* ctrl, uint8_t* buffer, uint16_t* data_len,
+fifo_return_status_t fifo_ctrl_get( uint8_t stack_id, fifo_ctrl_t* ctrl, uint8_t* buffer, uint16_t* data_len,
                                     const uint16_t data_buffer_size, void* metadata, uint8_t* metadata_len,
                                     const uint8_t metadata_buffer_size );
 
@@ -151,6 +152,7 @@ fifo_return_status_t fifo_ctrl_get( fifo_ctrl_t* ctrl, uint8_t* buffer, uint16_t
  * @brief Save a new element in the fifo
  *      If there is not enough free space, the oldest element will be removed
  *
+ * @param stack_id     Stack identifier
  * @param ctrl          fifo manager
  * @param buffer        buffer to save
  * @param buffer_len    size of buffer
@@ -158,7 +160,7 @@ fifo_return_status_t fifo_ctrl_get( fifo_ctrl_t* ctrl, uint8_t* buffer, uint16_t
  * @param metadata_len  length of metadata
  * @return fifo_return_status_t return status
  */
-fifo_return_status_t fifo_ctrl_set( fifo_ctrl_t* ctrl, const uint8_t* buffer, const uint16_t buffer_len,
+fifo_return_status_t fifo_ctrl_set( uint8_t stack_id, fifo_ctrl_t* ctrl, const uint8_t* buffer, const uint16_t buffer_len,
                                     const void* metadata, const uint8_t metadata_len );
 
 #ifdef __cplusplus

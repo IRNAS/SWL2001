@@ -416,7 +416,7 @@ void smtc_ping_slot_start( smtc_ping_slot_t* ping_slot_obj )
         rp_task.state                      = RP_TASK_STATE_SCHEDULE;
         rp_task.schedule_task_low_priority = true;
         int8_t board_delay_ms =
-            smtc_modem_hal_get_radio_tcxo_startup_delay_ms( ) + smtc_modem_hal_get_board_delay_ms( );
+            smtc_modem_hal_get_radio_tcxo_startup_delay_ms( ping_slot_obj->lr1_mac->stack_id ) + smtc_modem_hal_get_board_delay_ms( ping_slot_obj->lr1_mac->stack_id );
         smtc_real_get_rx_start_time_offset_ms( ping_slot_obj->lr1_mac->real, RX_SESSION_PARAM_CURRENT->rx_data_rate,
                                                board_delay_ms, RX_SESSION_PARAM_CURRENT->rx_window_symb,
                                                &rx_offset_ms_tmp );
@@ -1208,7 +1208,7 @@ static void ping_slot_mac_rx_lora_launch_callback_for_rp( void* rp_void )
     {
     }
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( false );
+    smtc_modem_hal_set_ant_switch( rp->stack_id,false );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_rx( &( rp->radio->ral ), rp->radio_params[id].rx.timeout_in_ms ) ==
                                      RAL_STATUS_OK );
     rp_stats_set_rx_timestamp( &rp->stats, smtc_modem_hal_get_time_in_ms( ) );

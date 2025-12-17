@@ -108,7 +108,7 @@ typedef struct modem_ctx_s
  * -----------------------------------------------------------------------------
  * --- PRIVATE VARIABLES -------------------------------------------------------
  */
-struct
+typedef struct modem_ctx_light_s
 {
     modem_downlink_msg_t modem_dwn_pkt;
     radio_planner_t*     modem_rp;
@@ -117,22 +117,14 @@ struct
     uint32_t             user_alarm;
     fifo_ctrl_t          fifo_ctrl_obj;
     uint8_t              fifo_buffer[FIFO_LORAWAN_SIZE];
-    uint8_t ( *downlink_services_callback[NUMBER_OF_SERVICES + NUMBER_OF_LORAWAN_MANAGEMENT_TASKS] )(
-        lr1_stack_mac_down_data_t* rx_down_data );
     uint32_t modem_reset_counter;
     bool     report_all_downlinks_to_user;
-} modem_ctx_light;
+} modem_ctx_light_t;
 
-#define modem_dwn_pkt modem_ctx_light.modem_dwn_pkt
-#define modem_rp modem_ctx_light.modem_rp
-#define modem_radio_ctx modem_ctx_light.modem_radio_ctx
-#define is_modem_in_test_mode modem_ctx_light.is_modem_in_test_mode
-#define user_alarm modem_ctx_light.user_alarm
-#define fifo_ctrl_obj modem_ctx_light.fifo_ctrl_obj
-#define fifo_buffer modem_ctx_light.fifo_buffer
-#define downlink_services_callback modem_ctx_light.downlink_services_callback
-#define modem_reset_counter modem_ctx_light.modem_reset_counter
-#define report_all_downlinks_to_user modem_ctx_light.report_all_downlinks_to_user
+modem_ctx_light_t modem_ctx_light[NUMBER_OF_STACKS];
+
+uint8_t ( *downlink_services_callback[NUMBER_OF_SERVICES + NUMBER_OF_LORAWAN_MANAGEMENT_TASKS] )(
+        lr1_stack_mac_down_data_t* rx_down_data );
 
 /*
  * -----------------------------------------------------------------------------
@@ -146,129 +138,142 @@ static void modem_downlink_callback( lr1_stack_mac_down_data_t* rx_down_data );
  * --- PUBLIC FUNCTIONS DEFINITION ---------------------------------------------
  */
 
-void modem_context_init_light( void ( *callback )( void ), radio_planner_t* rp )
+void modem_context_init_common( void ( *callback )( void ) )
 {
+    modem_event_init( callback );
+
     void ( *callback_on_launch_temp )( void* );
     void ( *callback_on_update_temp )( void* );
     void* context_callback_tmp;
 
-    modem_rp = rp;
-    modem_event_init( callback );
+    uint8_t index_tmp = 0;
+    lorawan_send_management_services_init( ( uint8_t* ) UNUSED_VALUE, UNUSED_VALUE,
+						&downlink_services_callback[index_tmp++], &callback_on_launch_temp,
+						&callback_on_update_temp, &context_callback_tmp );
+    modem_supervisor_init_callback( SEND_TASK, callback_on_launch_temp, callback_on_update_temp, context_callback_tmp );
+    lorawan_join_management_services_init( ( uint8_t* ) UNUSED_VALUE, UNUSED_VALUE,
+						&downlink_services_callback[index_tmp++], &callback_on_launch_temp,
+						&callback_on_update_temp, &context_callback_tmp );
+
+    modem_supervisor_init_callback( JOIN_TASK, callback_on_launch_temp, callback_on_update_temp, context_callback_tmp );
+    lorawan_dwn_ack_management_init( ( uint8_t* ) UNUSED_VALUE, UNUSED_VALUE, &downlink_services_callback[index_tmp++],
+					&callback_on_launch_temp, &callback_on_update_temp, &context_callback_tmp );
+    modem_supervisor_init_callback( RETRIEVE_DL_TASK, callback_on_launch_temp, callback_on_update_temp,
+					context_callback_tmp );
+    lorawan_cid_request_management_init( ( uint8_t* ) UNUSED_VALUE, UNUSED_VALUE,
+						&downlink_services_callback[index_tmp++], &callback_on_launch_temp,
+						&callback_on_update_temp, &context_callback_tmp );
+    modem_supervisor_init_callback( CID_REQ_TASK, callback_on_launch_temp, callback_on_update_temp,
+					context_callback_tmp );
+#ifdef ADD_CLASS_B
+    lorawan_class_b_management_services_init( ( uint8_t* ) UNUSED_VALUE, UNUSED_VALUE,
+						&downlink_services_callback[index_tmp++], &callback_on_launch_temp,
+						&callback_on_update_temp, &context_callback_tmp );
+    modem_supervisor_init_callback( CLASS_B_MANAGEMENT_TASK, callback_on_launch_temp, callback_on_update_temp,
+					context_callback_tmp );
+#endif
+
+
+	for (uint8_t stack = 0; stack < NUMBER_OF_STACKS; stack++)
+	{
+		for (size_t i = 0; i < SERVICE_CONFIG_COUNT; i++)
+		{
+			size_t idx = stack * SERVICE_CONFIG_COUNT + i;
+			modem_service_config[idx] = service_config_template[i];
+			modem_service_config[idx].stack_id = stack;
+		}
+	}
+
+	task_id_t task_id_tmp;
+	uint8_t   cpt_of_services_init = SERVICE_ID0_TASK;
+	for( uint8_t i = 0; i < NUMBER_OF_SERVICES; i++ )
+	{
+		task_id_tmp = cpt_of_services_init + ( NUMBER_OF_TASKS * modem_service_config[i].stack_id );
+
+		modem_service_config[i].callbacks_init_service(
+		&modem_service_config[i].service_id, task_id_tmp,
+		&downlink_services_callback[i + NUMBER_OF_LORAWAN_MANAGEMENT_TASKS], &callback_on_launch_temp,
+		&callback_on_update_temp, &context_callback_tmp );
+
+		modem_supervisor_init_callback( cpt_of_services_init, callback_on_launch_temp, callback_on_update_temp,
+						context_callback_tmp );
+		cpt_of_services_init++;
+	}
+}
+
+void modem_context_init_light( uint8_t stack_id, radio_planner_t* rp )
+{
+    modem_ctx_light[stack_id].modem_rp = rp;
 
     // Init duty-cycle object to 0
-    smtc_duty_cycle_init( );
+    smtc_duty_cycle_init( stack_id );
 
-    for( uint8_t stack_id = 0; stack_id < NUMBER_OF_STACKS; stack_id++ )
-    {
-        lorawan_api_init( rp, stack_id, ( void ( * )( lr1_stack_mac_down_data_t* ) ) modem_downlink_callback );
+    lorawan_api_init( rp, stack_id, ( void ( * )( lr1_stack_mac_down_data_t* ) ) modem_downlink_callback );
 
-        lorawan_api_dr_strategy_set( STATIC_ADR_MODE, stack_id );
-	
+    lorawan_api_dr_strategy_set( STATIC_ADR_MODE, stack_id );
+
 #if defined ( STORE_JOIN_SESSION )
-	SMTC_MODEM_HAL_TRACE_PRINTF( "Trying to restore join session.\n" );
-	lorawan_api_join_session_restore( stack_id );
+    SMTC_MODEM_HAL_TRACE_PRINTF( "Trying to restore join session.\n" );
+    lorawan_api_join_session_restore( stack_id );
 #else
 	lorawan_api_join_status_clear( stack_id );
 #endif
 
-        // to init duty cycle
-        smtc_real_region_types_t region = lorawan_api_get_region( stack_id );
-        lorawan_api_set_region( region, stack_id );
-    }
+    // EvaTODO check if cbs should be stack dependant
+    // to init duty cycle
+    smtc_real_region_types_t region = lorawan_api_get_region( stack_id );
+    lorawan_api_set_region( region, stack_id );
 
-    uint8_t index_tmp = 0;
-    lorawan_send_management_services_init( ( uint8_t* ) UNUSED_VALUE, UNUSED_VALUE,
-                                           &downlink_services_callback[index_tmp++], &callback_on_launch_temp,
-                                           &callback_on_update_temp, &context_callback_tmp );
-    modem_supervisor_init_callback( SEND_TASK, callback_on_launch_temp, callback_on_update_temp, context_callback_tmp );
-    lorawan_join_management_services_init( ( uint8_t* ) UNUSED_VALUE, UNUSED_VALUE,
-                                           &downlink_services_callback[index_tmp++], &callback_on_launch_temp,
-                                           &callback_on_update_temp, &context_callback_tmp );
-
-    modem_supervisor_init_callback( JOIN_TASK, callback_on_launch_temp, callback_on_update_temp, context_callback_tmp );
-    lorawan_dwn_ack_management_init( ( uint8_t* ) UNUSED_VALUE, UNUSED_VALUE, &downlink_services_callback[index_tmp++],
-                                     &callback_on_launch_temp, &callback_on_update_temp, &context_callback_tmp );
-    modem_supervisor_init_callback( RETRIEVE_DL_TASK, callback_on_launch_temp, callback_on_update_temp,
-                                    context_callback_tmp );
-    lorawan_cid_request_management_init( ( uint8_t* ) UNUSED_VALUE, UNUSED_VALUE,
-                                         &downlink_services_callback[index_tmp++], &callback_on_launch_temp,
-                                         &callback_on_update_temp, &context_callback_tmp );
-    modem_supervisor_init_callback( CID_REQ_TASK, callback_on_launch_temp, callback_on_update_temp,
-                                    context_callback_tmp );
-#ifdef ADD_CLASS_B
-    lorawan_class_b_management_services_init( ( uint8_t* ) UNUSED_VALUE, UNUSED_VALUE,
-                                              &downlink_services_callback[index_tmp++], &callback_on_launch_temp,
-                                              &callback_on_update_temp, &context_callback_tmp );
-    modem_supervisor_init_callback( CLASS_B_MANAGEMENT_TASK, callback_on_launch_temp, callback_on_update_temp,
-                                    context_callback_tmp );
-#endif
-
-    task_id_t task_id_tmp;
-    uint8_t   cpt_of_services_init = SERVICE_ID0_TASK;
-    for( uint8_t i = 0; i < NUMBER_OF_SERVICES; i++ )
-    {
-        task_id_tmp = cpt_of_services_init + ( NUMBER_OF_TASKS * modem_service_config[i].stack_id );
-
-        modem_service_config[i].callbacks_init_service(
-            &modem_service_config[i].service_id, task_id_tmp,
-            &downlink_services_callback[i + NUMBER_OF_LORAWAN_MANAGEMENT_TASKS], &callback_on_launch_temp,
-            &callback_on_update_temp, &context_callback_tmp );
-
-        modem_supervisor_init_callback( cpt_of_services_init, callback_on_launch_temp, callback_on_update_temp,
-                                        context_callback_tmp );
-        cpt_of_services_init++;
-    }
+    modem_ctx_light[stack_id].is_modem_in_test_mode = false;
+    modem_ctx_light[stack_id].user_alarm = 0x7FFFFFFF;
 
     // save radio planner pointer for suspend/resume features
-
-    is_modem_in_test_mode = false;
-    user_alarm            = 0x7FFFFFFF;
-    fifo_ctrl_init( &fifo_ctrl_obj, fifo_buffer, FIFO_LORAWAN_SIZE );
+    fifo_ctrl_init( &modem_ctx_light[stack_id].fifo_ctrl_obj, modem_ctx_light[stack_id].fifo_buffer, FIFO_LORAWAN_SIZE );
 
     // load modem context
-    modem_load_modem_context( );
+    modem_load_modem_context( stack_id );
     // Increment reset counter
-    modem_reset_counter++;
-    report_all_downlinks_to_user = false;
+    modem_ctx_light[stack_id].modem_reset_counter++;
+    modem_ctx_light[stack_id].report_all_downlinks_to_user = false;
     // Save modem context - to keep the reset counter
-    modem_store_modem_context( );
+    modem_store_modem_context( stack_id );
 }
 
-fifo_ctrl_t* modem_context_get_fifo_obj( void )
+fifo_ctrl_t* modem_context_get_fifo_obj( uint8_t stack_id )
 {
-    return &fifo_ctrl_obj;
+    return &modem_ctx_light[stack_id].fifo_ctrl_obj;
 }
 
-void modem_set_test_mode_status( bool enable )
+void modem_set_test_mode_status( uint8_t stack_id, bool enable )
 {
-    is_modem_in_test_mode = enable;
+    modem_ctx_light[stack_id].is_modem_in_test_mode = enable;
 }
 
-bool modem_get_test_mode_status( void )
+bool modem_get_test_mode_status( uint8_t stack_id )
 {
-    return is_modem_in_test_mode;
+    return modem_ctx_light[stack_id].is_modem_in_test_mode;
 }
-uint32_t modem_get_user_alarm( void )
+uint32_t modem_get_user_alarm( uint8_t stack_id )
 {
-    return ( user_alarm );
+    return ( modem_ctx_light[stack_id].user_alarm );
 }
-void modem_set_user_alarm( uint32_t alarm )
+void modem_set_user_alarm( uint8_t stack_id, uint32_t alarm )
 {
-    user_alarm = alarm;
-}
-
-void modem_set_radio_ctx( const void* radio_ctx )
-{
-    modem_radio_ctx = radio_ctx;
+    modem_ctx_light[stack_id].user_alarm = alarm;
 }
 
-const void* modem_get_radio_ctx( void )
+void modem_set_radio_ctx( uint8_t stack_id, const void* radio_ctx )
 {
-    return modem_radio_ctx;
+    modem_ctx_light[stack_id].modem_radio_ctx = radio_ctx;
 }
-radio_planner_t* modem_get_rp( void )
+
+const void* modem_get_radio_ctx( uint8_t stack_id )
 {
-    return modem_rp;
+    return modem_ctx_light[stack_id].modem_radio_ctx;
+}
+radio_planner_t* modem_get_rp( uint8_t stack_id )
+{
+    return modem_ctx_light[stack_id].modem_rp;
 }
 
 void modem_empty_callback( void* ctx )
@@ -276,7 +281,7 @@ void modem_empty_callback( void* ctx )
     // Use for suspend/resume radio access
 }
 
-bool modem_suspend_radio_access( void )
+bool modem_suspend_radio_access( uint8_t stack_id )
 {
     rp_radio_params_t fake_radio_params = { 0 };
 
@@ -291,7 +296,7 @@ bool modem_suspend_radio_access( void )
 
     };
 
-    rp_hook_status_t status = rp_task_enqueue( modem_rp, &rp_task, NULL, 0, &fake_radio_params );
+    rp_hook_status_t status = rp_task_enqueue( modem_ctx_light[stack_id].modem_rp, &rp_task, NULL, 0, &fake_radio_params );
 
     if( status != RP_HOOK_STATUS_OK )
     {
@@ -301,14 +306,14 @@ bool modem_suspend_radio_access( void )
     return true;
 }
 
-bool modem_resume_radio_access( void )
+bool modem_resume_radio_access( uint8_t stack_id )
 {
     bool status = true;
 
-    if( rp_task_abort( modem_rp, RP_HOOK_ID_SUSPEND ) == RP_HOOK_STATUS_OK )
+    if( rp_task_abort( modem_ctx_light[stack_id].modem_rp, RP_HOOK_ID_SUSPEND ) == RP_HOOK_STATUS_OK )
     {
         // force a call of rp_callback to re-arbitrate the radio planner before the next loop
-        rp_callback( modem_rp );
+        rp_callback( modem_ctx_light[stack_id].modem_rp );
     }
     else
     {
@@ -340,7 +345,7 @@ int32_t modem_duty_cycle_get_status( uint8_t stack_id )
     int32_t region_dtc = 0;
     int32_t nwk_dtc    = lorawan_api_next_network_free_duty_cycle_ms_get( stack_id );
 
-    if( smtc_duty_cycle_enable_get( ) == SMTC_DTC_ENABLED )
+    if( smtc_duty_cycle_enable_get( stack_id ) == SMTC_DTC_ENABLED )
     {
         uint8_t  number_of_freq = 0;
         uint32_t freq_list[16]  = { 0 };  // Generally region with duty cycle support 16 channels only
@@ -348,7 +353,7 @@ int32_t modem_duty_cycle_get_status( uint8_t stack_id )
         if( lorawan_api_get_current_enabled_frequencies_list(
                 &number_of_freq, freq_list, sizeof( freq_list ) / sizeof( freq_list[0] ), stack_id ) == true )
         {
-            region_dtc = smtc_duty_cycle_get_next_free_time_ms( number_of_freq, freq_list );
+            region_dtc = smtc_duty_cycle_get_next_free_time_ms( stack_id, number_of_freq, freq_list );
 #if defined( ADD_RELAY_TX )
             int32_t relay_region_dtc = smtc_relay_tx_free_duty_cycle_ms_get( stack_id );
 
@@ -412,62 +417,75 @@ uint8_t modem_get_status( uint8_t stack_id )
     return ( modem_status );
 }
 
-void modem_store_modem_context( void )
+void modem_store_modem_context( uint8_t stack_id )
 {
     modem_ctx_t ctx = { 0 };
 
+    SMTC_MODEM_HAL_TRACE_INFO_DEBUG( "Storing modem context for stack id: %d with reset counter %lu on offset %d \n", stack_id,
+				modem_ctx_light[stack_id].modem_reset_counter, stack_id * sizeof( ctx ) );
+
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
+
     // Restore current saved context
-    smtc_modem_hal_context_restore( CONTEXT_MODEM, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+    smtc_modem_hal_context_restore( CONTEXT_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
 
     // Check if some values have changed
-    if( ctx.reset_counter != modem_reset_counter )
+    if( ctx.reset_counter != modem_ctx_light[stack_id].modem_reset_counter )
     {
-        ctx.reset_counter = modem_reset_counter;
+        ctx.reset_counter = modem_ctx_light[stack_id].modem_reset_counter;
         ctx.crc           = crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) );
 
-        smtc_modem_hal_context_store( CONTEXT_MODEM, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+        smtc_modem_hal_context_store( CONTEXT_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
         // dummy context reading to ensure context store is done before exiting the function
-        smtc_modem_hal_context_restore( CONTEXT_MODEM, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+        smtc_modem_hal_context_restore( CONTEXT_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
     }
 }
 
-void modem_load_modem_context( void )
+void modem_load_modem_context( uint8_t stack_id )
 {
     modem_ctx_t ctx = { 0 };
-    smtc_modem_hal_context_restore( CONTEXT_MODEM, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
+
+    smtc_modem_hal_context_restore( CONTEXT_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
 
     if( crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) ) != ctx.crc )
     {
         memset( &ctx, 0, sizeof( ctx ) );
         ctx.crc = crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) );
 
-        smtc_modem_hal_context_store( CONTEXT_MODEM, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+        smtc_modem_hal_context_store( CONTEXT_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
         // dummy context reading to ensure context store is done before exiting the function
-        smtc_modem_hal_context_restore( CONTEXT_MODEM, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+        smtc_modem_hal_context_restore( CONTEXT_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
     }
 
-    modem_reset_counter = ctx.reset_counter;
+    SMTC_MODEM_HAL_TRACE_WARNING( "Modem context for stack id: %d loaded with reset counter %lu\n", stack_id, ctx.reset_counter );
+
+    modem_ctx_light[stack_id].modem_reset_counter = ctx.reset_counter;
 }
 
-void modem_reset_modem_context( void )
+void modem_reset_modem_context( uint8_t stack_id )
 {
     modem_ctx_t ctx = { 0 };
-    smtc_modem_hal_context_store( CONTEXT_MODEM, 0, ( uint8_t* ) &ctx, sizeof( ctx ) );
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
+    smtc_modem_hal_context_store( CONTEXT_MODEM, stack_id * real_size, ( uint8_t* ) &ctx, sizeof( ctx ) );
 }
 
-uint32_t modem_get_reset_counter( void )
+uint32_t modem_get_reset_counter( uint8_t stack_id )
 {
-    return modem_reset_counter;
+    return modem_ctx_light[stack_id].modem_reset_counter;
 }
 
-void modem_set_report_all_downlinks_to_user( bool report_all_downlinks )
+void modem_set_report_all_downlinks_to_user( uint8_t stack_id, bool report_all_downlinks )
 {
-    report_all_downlinks_to_user = report_all_downlinks;
+    modem_ctx_light[stack_id].report_all_downlinks_to_user = report_all_downlinks;
 }
 
-bool modem_get_report_all_downlinks_to_user( void )
+bool modem_get_report_all_downlinks_to_user( uint8_t stack_id )
 {
-    return report_all_downlinks_to_user;
+    return modem_ctx_light[stack_id].report_all_downlinks_to_user;
 }
 
 /*
@@ -512,10 +530,10 @@ void modem_downlink_callback( lr1_stack_mac_down_data_t* rx_down_data )
     }
 
     // none services used the downlink data for itself then push it into the user fifo
-    if( ( report_all_downlinks_to_user == true ) ||
+    if( ( modem_ctx_light[rx_down_data->stack_id].report_all_downlinks_to_user == true ) ||
         ( ( downlink_used_by_services == 0 ) && ( rx_down_data->rx_metadata.rx_fport != 0 ) ) )
     {
-        if( fifo_ctrl_set( &fifo_ctrl_obj, rx_down_data->rx_payload, rx_down_data->rx_payload_size, &metadata,
+        if( fifo_ctrl_set( rx_down_data->stack_id, &modem_ctx_light[rx_down_data->stack_id].fifo_ctrl_obj, rx_down_data->rx_payload, rx_down_data->rx_payload_size, &metadata,
                            sizeof( smtc_modem_dl_metadata_t ) ) != FIFO_STATUS_OK )
         {
             SMTC_MODEM_HAL_TRACE_PRINTF( "Fifo problem\n" );
@@ -524,7 +542,7 @@ void modem_downlink_callback( lr1_stack_mac_down_data_t* rx_down_data )
         else
         {
             increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_DOWNDATA, 0, rx_down_data->stack_id );
-            fifo_ctrl_print_stat( &fifo_ctrl_obj );
+            fifo_ctrl_print_stat( &modem_ctx_light[rx_down_data->stack_id].fifo_ctrl_obj );
         }
     }
 }

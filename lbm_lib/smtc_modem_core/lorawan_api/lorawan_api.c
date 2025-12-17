@@ -156,7 +156,7 @@ status_lorawan_t lorawan_api_set_region( smtc_real_region_types_t region_type, u
         // Configure duty-cycle object
         for( int i = 0; i < BAND_EU868_MAX; i++ )
         {
-            smtc_duty_cycle_config( BAND_EU868_MAX, i, duty_cycle_by_band_eu_868[i],
+            smtc_duty_cycle_config( stack_id, BAND_EU868_MAX, i, duty_cycle_by_band_eu_868[i],
                                     frequency_range_by_band_eu_868[i][0], frequency_range_by_band_eu_868[i][1] );
         }
     }
@@ -167,7 +167,7 @@ status_lorawan_t lorawan_api_set_region( smtc_real_region_types_t region_type, u
         // Configure duty-cycle object
         for( int i = 0; i < BAND_RU864_MAX; i++ )
         {
-            smtc_duty_cycle_config( BAND_RU864_MAX, i, duty_cycle_by_band_ru_864[i],
+            smtc_duty_cycle_config( stack_id, BAND_RU864_MAX, i, duty_cycle_by_band_ru_864[i],
                                     frequency_range_by_band_ru_864[i][0], frequency_range_by_band_ru_864[i][1] );
         }
     }
@@ -177,15 +177,11 @@ status_lorawan_t lorawan_api_set_region( smtc_real_region_types_t region_type, u
     // Remark: In multi-stack EU868 and IN865 there is a bands overlapping, EU868 has a duty-cycle but not IN865, in
     // this case the duty cycle will be enabled
     smtc_dtc_enablement_type_t dtc_supported = SMTC_DTC_FULL_DISABLED;
-    for( uint8_t i = 0; i < NUMBER_OF_STACKS; i++ )
+    if( smtc_real_is_dtc_supported( lr1_mac_obj[stack_id].real ) == true )
     {
-        if( smtc_real_is_dtc_supported( lr1_mac_obj[i].real ) == true )
-        {
-            dtc_supported = SMTC_DTC_ENABLED;
-            break;
-        }
+	dtc_supported = SMTC_DTC_ENABLED;
     }
-    smtc_duty_cycle_enable_set( dtc_supported );
+    smtc_duty_cycle_enable_set( stack_id, dtc_supported );
     return ret;
 }
 

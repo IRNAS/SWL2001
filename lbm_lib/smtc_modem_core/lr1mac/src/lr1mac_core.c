@@ -807,8 +807,10 @@ lr1mac_states_t lr1mac_core_state_get( lr1_stack_mac_t* lr1_mac_obj )
 void lr1mac_core_context_save( lr1_stack_mac_t* lr1_mac_obj )
 {
     lr1_mac_nvm_context_t ctx = { 0 };
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
 
-    smtc_modem_hal_context_restore( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * sizeof( ctx ), ( uint8_t* ) &ctx,
+    smtc_modem_hal_context_restore( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * real_size, ( uint8_t* ) &ctx,
                                     sizeof( ctx ) );
 
     if( ( ctx.devnonce != lr1_mac_obj->dev_nonce ) ||
@@ -845,12 +847,12 @@ void lr1mac_core_context_save( lr1_stack_mac_t* lr1_mac_obj )
 	ctx.join_status	  	  = lr1_mac_obj->join_status;
 #endif
         ctx.crc                   = lr1mac_utilities_crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) );
-	smtc_modem_hal_context_store( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * sizeof( ctx ), ( uint8_t* ) &ctx,
+	smtc_modem_hal_context_store( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * real_size, ( uint8_t* ) &ctx,
                                       sizeof( ctx ) );
 
         // dummy context reading to ensure context store is done before exiting the function
         lr1_mac_nvm_context_t dummy_context = { 0 };
-        smtc_modem_hal_context_restore( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * sizeof( ctx ),
+        smtc_modem_hal_context_restore( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * real_size,
                                         ( uint8_t* ) &dummy_context, sizeof( dummy_context ) );
     }
 }
@@ -858,7 +860,9 @@ void lr1mac_core_context_save( lr1_stack_mac_t* lr1_mac_obj )
 status_lorawan_t lr1mac_core_context_load( lr1_stack_mac_t* lr1_mac_obj )
 {
     lr1_mac_nvm_context_t ctx = { 0 };
-    smtc_modem_hal_context_restore( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * sizeof( ctx ), ( uint8_t* ) &ctx,
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
+    smtc_modem_hal_context_restore( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * real_size, ( uint8_t* ) &ctx,
                                     sizeof( ctx ) );
 
     if( lr1mac_utilities_crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) ) == ctx.crc )
@@ -890,16 +894,18 @@ status_lorawan_t lr1mac_core_context_load( lr1_stack_mac_t* lr1_mac_obj )
 void lr1mac_core_context_factory_reset( lr1_stack_mac_t* lr1_mac_obj )
 {
     lr1_mac_nvm_context_t ctx = { 0 };
+    /* EvaTODO: this is now copied "bad" implementation from lbm_zephyr.... */
+    uint32_t real_size = sizeof( ctx ) + 8 - ( sizeof( ctx ) % 8 );  // align to 8 bytes
     ctx.ctx_version           = LORAWAN_NVM_CTX_VERSION;
     memset( ctx.join_nonce, 0xFF, sizeof( ctx.join_nonce ) );
     ctx.crc = lr1mac_utilities_crc( ( uint8_t* ) &ctx, sizeof( ctx ) - sizeof( ctx.crc ) );
 
-    smtc_modem_hal_context_store( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * sizeof( ctx ), ( uint8_t* ) &ctx,
+    smtc_modem_hal_context_store( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * real_size, ( uint8_t* ) &ctx,
                                   sizeof( ctx ) );
 
     // dummy context reading to ensure context store is done before exiting the function
     lr1_mac_nvm_context_t dummy_context = { 0 };
-    smtc_modem_hal_context_restore( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * sizeof( ctx ),
+    smtc_modem_hal_context_restore( CONTEXT_LORAWAN_STACK, lr1_mac_obj->stack_id * real_size,
                                     ( uint8_t* ) &dummy_context, sizeof( dummy_context ) );
 }
 
@@ -1242,13 +1248,13 @@ status_lorawan_t lr1mac_core_update_join_channel( lr1_stack_mac_t* lr1_mac_obj )
 
     smtc_real_get_next_tx_dr( lr1_mac_obj->real, lr1_mac_obj->join_status, &lr1_mac_obj->adr_mode_select,
                               &lr1_mac_obj->tx_data_rate, lr1_mac_obj->tx_data_rate_adr, &lr1_mac_obj->adr_enable );
-    return ( smtc_real_get_join_next_channel(
+    return ( smtc_real_get_join_next_channel( lr1_mac_obj->stack_id,
         lr1_mac_obj->real, &( lr1_mac_obj->tx_data_rate ), &( lr1_mac_obj->tx_frequency ),
         &( lr1_mac_obj->rx1_frequency ), &( lr1_mac_obj->rx2_frequency ), &( lr1_mac_obj->nb_available_tx_channel ) ) );
 }
 status_lorawan_t lr1mac_core_update_next_tx_channel( lr1_stack_mac_t* lr1_mac_obj )
 {
-    return ( smtc_real_get_next_channel( lr1_mac_obj->real, lr1_mac_obj->tx_data_rate, &( lr1_mac_obj->tx_frequency ),
+    return ( smtc_real_get_next_channel( lr1_mac_obj->stack_id, lr1_mac_obj->real, lr1_mac_obj->tx_data_rate, &( lr1_mac_obj->tx_frequency ),
                                          &( lr1_mac_obj->rx1_frequency ), &( lr1_mac_obj->nb_available_tx_channel ) ) );
 }
 uint32_t lr1mac_core_get_time_of_nwk_ans( lr1_stack_mac_t* lr1_mac_obj )
@@ -1363,7 +1369,7 @@ static void lr1mac_mac_update( lr1_stack_mac_t* lr1_mac_obj )
     if( ( lr1_mac_obj->type_of_ans_to_send == NWKFRAME_TOSEND ) ||
         ( lr1_mac_obj->type_of_ans_to_send == USRFRAME_TORETRANSMIT ) )
     {  // @note ack send during the next tx|| ( packet.IsFrameToSend == USERACK_TOSEND ) ) {
-        if( smtc_real_get_next_channel( lr1_mac_obj->real, lr1_mac_obj->tx_data_rate, &lr1_mac_obj->tx_frequency,
+        if( smtc_real_get_next_channel( lr1_mac_obj->stack_id, lr1_mac_obj->real, lr1_mac_obj->tx_data_rate, &lr1_mac_obj->tx_frequency,
                                         &lr1_mac_obj->rx1_frequency,
                                         &lr1_mac_obj->nb_available_tx_channel ) != OKLORAWAN )
         {

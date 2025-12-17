@@ -67,9 +67,9 @@
 
 static struct
 {
-    smtc_dtc_t* dtc_obj_ptr;
+    smtc_dtc_t* dtc_obj_ptr[NUMBER_OF_STACKS];
 #if defined( REGION_EU_868 ) || ( REGION_RU_864 )
-    smtc_dtc_t dtc_obj_ctx;
+    smtc_dtc_t dtc_obj_ctx[NUMBER_OF_STACKS];
 #endif
 } dtc_context;
 #define dtc_obj_ptr dtc_context.dtc_obj_ptr
@@ -133,21 +133,21 @@ static void smtc_duty_cycle_put_band_in_array( smtc_dtc_t* dtc_obj, uint8_t* tmp
  * -----------------------------------------------------------------------------
  * --- PUBLIC FUNCTIONS DEFINITION ---------------------------------------------
  */
-void smtc_duty_cycle_init( void )
+void smtc_duty_cycle_init( uint8_t stack_id )
 {
 #if defined( REGION_EU_868 ) || ( REGION_RU_864 )
-    dtc_obj_ptr = &dtc_obj_ctx;
+    dtc_obj_ptr[stack_id] = &dtc_obj_ctx[stack_id];
     // Set to 0 the dtc_obj
-    memset( dtc_obj_ptr, 0, sizeof( smtc_dtc_t ) );
+    memset( dtc_obj_ptr[stack_id], 0, sizeof( smtc_dtc_t ) );
 #else
-    dtc_obj_ptr = NULL;
+    dtc_obj_ptr[stack_id] = NULL;
 #endif
 }
 
-void smtc_duty_cycle_config( uint8_t number_of_bands, uint8_t band_idx, uint16_t duty_cycle_regulation,
+void smtc_duty_cycle_config( uint8_t stack_id, uint8_t number_of_bands, uint8_t band_idx, uint16_t duty_cycle_regulation,
                              uint32_t freq_min, uint32_t freq_max )
 {
-    if( dtc_obj_ptr == NULL )
+    if( dtc_obj_ptr[stack_id] == NULL )
     {
         return;
     }
@@ -155,69 +155,69 @@ void smtc_duty_cycle_config( uint8_t number_of_bands, uint8_t band_idx, uint16_t
     {
         SMTC_MODEM_HAL_PANIC( );
     }
-    dtc_obj_ptr->number_of_bands = number_of_bands;
-    if( ( band_idx >= dtc_obj_ptr->number_of_bands ) || ( dtc_obj_ptr->number_of_bands == 0 ) )
+    dtc_obj_ptr[stack_id]->number_of_bands = number_of_bands;
+    if( ( band_idx >= dtc_obj_ptr[stack_id]->number_of_bands ) || ( dtc_obj_ptr[stack_id]->number_of_bands == 0 ) )
     {
         SMTC_MODEM_HAL_PANIC( );
     }
-    dtc_obj_ptr->bands[band_idx].duty_cycle_regulation = duty_cycle_regulation;
-    dtc_obj_ptr->bands[band_idx].freq_min              = freq_min;
-    dtc_obj_ptr->bands[band_idx].freq_max              = freq_max;
+    dtc_obj_ptr[stack_id]->bands[band_idx].duty_cycle_regulation = duty_cycle_regulation;
+    dtc_obj_ptr[stack_id]->bands[band_idx].freq_min              = freq_min;
+    dtc_obj_ptr[stack_id]->bands[band_idx].freq_max              = freq_max;
 }
 
-smtc_dtc_rc_t smtc_duty_cycle_enable_set( smtc_dtc_enablement_type_t enable )
+smtc_dtc_rc_t smtc_duty_cycle_enable_set( uint8_t stack_id, smtc_dtc_enablement_type_t enable )
 {
-    if( dtc_obj_ptr == NULL )
+    if( dtc_obj_ptr[stack_id] == NULL )
     {
         return SMTC_DTC_ERR;
     }
 
     if( enable != SMTC_DTC_FULL_DISABLED )
     {
-        if( dtc_obj_ptr->number_of_bands == 0 )
+        if( dtc_obj_ptr[stack_id]->number_of_bands == 0 )
         {
             return SMTC_DTC_ERR;
         }
     }
-    dtc_obj_ptr->enabled = enable;
+    dtc_obj_ptr[stack_id]->enabled = enable;
 
     return SMTC_DTC_OK;
 }
 
-smtc_dtc_enablement_type_t smtc_duty_cycle_enable_get( void )
+smtc_dtc_enablement_type_t smtc_duty_cycle_enable_get( uint8_t stack_id )
 {
-    if( dtc_obj_ptr == NULL )
+    if( dtc_obj_ptr[stack_id] == NULL )
     {
         return SMTC_DTC_FULL_DISABLED;
     }
-    return dtc_obj_ptr->enabled;
+    return dtc_obj_ptr[stack_id]->enabled;
 }
 
-void smtc_duty_cycle_sum( uint32_t freq_hz, uint32_t toa_ms )
+void smtc_duty_cycle_sum( uint8_t stack_id, uint32_t freq_hz, uint32_t toa_ms )
 {
-    if( dtc_obj_ptr == NULL )
+    if( dtc_obj_ptr[stack_id] == NULL )
     {
         return;
     }
-    if( dtc_obj_ptr->number_of_bands == 0 )
+    if( dtc_obj_ptr[stack_id]->number_of_bands == 0 )
     {
         return;
     }
-    if( dtc_obj_ptr->enabled == SMTC_DTC_FULL_DISABLED )
+    if( dtc_obj_ptr[stack_id]->enabled == SMTC_DTC_FULL_DISABLED )
     {
         return;
     }
 
     uint32_t rtc_time_now = smtc_modem_hal_get_time_in_ms( );
     uint8_t  band;
-    if( smtc_duty_cycle_get_band( dtc_obj_ptr, freq_hz, &band ) == false )
+    if( smtc_duty_cycle_get_band( dtc_obj_ptr[stack_id], freq_hz, &band ) == false )
     {
         return;
     }
-    uint8_t idx_previous = dtc_obj_ptr->bands[band].index_previous;
+    uint8_t idx_previous = dtc_obj_ptr[stack_id]->bands[band].index_previous;
 
     // compute index by delta to manage rtc_ms wrapping
-    uint32_t timestamp_diff = smtc_duty_cycle_time_diff( rtc_time_now, dtc_obj_ptr->bands[band].toa_timestamp_ms );
+    uint32_t timestamp_diff = smtc_duty_cycle_time_diff( rtc_time_now, dtc_obj_ptr[stack_id]->bands[band].toa_timestamp_ms );
     uint8_t  idx_new        = smtc_duty_cycle_compute_index( timestamp_diff, idx_previous );
 
     // Convert TOA to the resolution
@@ -226,10 +226,10 @@ void smtc_duty_cycle_sum( uint32_t freq_hz, uint32_t toa_ms )
                                                  : ( toa_ms / smtc_dtc_resolution_ms ) + 1;
 
     // More than SMTC_DTC_PERIOD_MS since the last timestamp
-    if( smtc_duty_cycle_time_diff( rtc_time_now, dtc_obj_ptr->bands[band].toa_timestamp_ms ) >= SMTC_DTC_PERIOD_MS )
+    if( smtc_duty_cycle_time_diff( rtc_time_now, dtc_obj_ptr[stack_id]->bands[band].toa_timestamp_ms ) >= SMTC_DTC_PERIOD_MS )
     {
         // Erase band cumulated TOA
-        memset( dtc_obj_ptr->bands[band].toa_sum_ms, 0, sizeof( dtc_obj_ptr->bands[band].toa_sum_ms ) );
+        memset( dtc_obj_ptr[stack_id]->bands[band].toa_sum_ms, 0, sizeof( dtc_obj_ptr[stack_id]->bands[band].toa_sum_ms ) );
     }
     else
     {
@@ -237,7 +237,7 @@ void smtc_duty_cycle_sum( uint32_t freq_hz, uint32_t toa_ms )
         if( ( idx_new == idx_previous ) && ( timestamp_diff < ( SMTC_DTC_SECONDS_BY_UNIT * 1000 ) ) )
         {
             // Sum TOA in same buffer
-            toa_ms += dtc_obj_ptr->bands[band].toa_sum_ms[idx_new];
+            toa_ms += dtc_obj_ptr[stack_id]->bands[band].toa_sum_ms[idx_new];
         }
         else
         {
@@ -250,42 +250,42 @@ void smtc_duty_cycle_sum( uint32_t freq_hz, uint32_t toa_ms )
                 {
                     i = 0;
                 }
-                dtc_obj_ptr->bands[band].toa_sum_ms[i] = 0;
+                dtc_obj_ptr[stack_id]->bands[band].toa_sum_ms[i] = 0;
             }
         }
     }
     // Save the new TOA
-    dtc_obj_ptr->bands[band].toa_sum_ms[idx_new] = toa_ms;
-    dtc_obj_ptr->bands[band].toa_timestamp_ms    = rtc_time_now;
-    dtc_obj_ptr->bands[band].index_previous      = idx_new;
+    dtc_obj_ptr[stack_id]->bands[band].toa_sum_ms[idx_new] = toa_ms;
+    dtc_obj_ptr[stack_id]->bands[band].toa_timestamp_ms    = rtc_time_now;
+    dtc_obj_ptr[stack_id]->bands[band].index_previous      = idx_new;
 }
 
-void smtc_duty_cycle_update( void )
+void smtc_duty_cycle_update( uint8_t stack_id )
 {
-    if( dtc_obj_ptr == NULL )
+    if( dtc_obj_ptr[stack_id] == NULL )
     {
         return;
     }
-    if( dtc_obj_ptr->number_of_bands == 0 )
+    if( dtc_obj_ptr[stack_id]->number_of_bands == 0 )
     {
         return;
     }
     uint32_t rtc_time_now = smtc_modem_hal_get_time_in_ms( );
 
-    for( uint8_t band = 0; band < dtc_obj_ptr->number_of_bands; band++ )
+    for( uint8_t band = 0; band < dtc_obj_ptr[stack_id]->number_of_bands; band++ )
     {
-        uint8_t idx_previous = dtc_obj_ptr->bands[band].index_previous;
+        uint8_t idx_previous = dtc_obj_ptr[stack_id]->bands[band].index_previous;
         // compute index by delta to manage rtc_ms wrapping
-        uint32_t timestamp_diff = smtc_duty_cycle_time_diff( rtc_time_now, dtc_obj_ptr->bands[band].toa_timestamp_ms );
+        uint32_t timestamp_diff = smtc_duty_cycle_time_diff( rtc_time_now, dtc_obj_ptr[stack_id]->bands[band].toa_timestamp_ms );
         uint8_t  idx_new        = smtc_duty_cycle_compute_index( timestamp_diff, idx_previous );
 
         // More than SMTC_DTC_PERIOD_MS since the last timestamp
-        if( smtc_duty_cycle_time_diff( rtc_time_now, dtc_obj_ptr->bands[band].toa_timestamp_ms ) >= SMTC_DTC_PERIOD_MS )
+        if( smtc_duty_cycle_time_diff( rtc_time_now, dtc_obj_ptr[stack_id]->bands[band].toa_timestamp_ms ) >= SMTC_DTC_PERIOD_MS )
         {
             // Erase band cumulated TOA, it's been over 1h
-            memset( dtc_obj_ptr->bands[band].toa_sum_ms, 0, sizeof( dtc_obj_ptr->bands[band].toa_sum_ms ) );
-            dtc_obj_ptr->bands[band].toa_timestamp_ms = rtc_time_now;
-            dtc_obj_ptr->bands[band].index_previous   = idx_new;
+            memset( dtc_obj_ptr[stack_id]->bands[band].toa_sum_ms, 0, sizeof( dtc_obj_ptr[stack_id]->bands[band].toa_sum_ms ) );
+            dtc_obj_ptr[stack_id]->bands[band].toa_timestamp_ms = rtc_time_now;
+            dtc_obj_ptr[stack_id]->bands[band].index_previous   = idx_new;
         }
         else
         {
@@ -302,16 +302,16 @@ void smtc_duty_cycle_update( void )
                 if( ( i != idx_new ) ||
                     ( ( i == idx_new ) && ( timestamp_diff >= ( SMTC_DTC_SECONDS_BY_UNIT * 1000 ) ) ) )
                 {
-                    dtc_obj_ptr->bands[band].toa_sum_ms[i] = 0;
+                    dtc_obj_ptr[stack_id]->bands[band].toa_sum_ms[i] = 0;
                 }
             }
         }
     }
 }
 
-bool smtc_duty_cycle_is_toa_accepted( smtc_dtc_t* dtc_obj, uint32_t freq_hz, uint32_t toa_ms )
+bool smtc_duty_cycle_is_toa_accepted( uint8_t stack_id, smtc_dtc_t* dtc_obj, uint32_t freq_hz, uint32_t toa_ms )
 {
-    if( dtc_obj_ptr == NULL )
+    if( dtc_obj_ptr[stack_id] == NULL )
     {
         return true;
     }
@@ -343,9 +343,9 @@ bool smtc_duty_cycle_is_toa_accepted( smtc_dtc_t* dtc_obj, uint32_t freq_hz, uin
     return true;
 }
 
-int32_t smtc_duty_cycle_band_get_available_toa_ms( smtc_dtc_t* dtc_obj, uint8_t band )
+int32_t smtc_duty_cycle_band_get_available_toa_ms( uint8_t stack_id, smtc_dtc_t* dtc_obj, uint8_t band )
 {
-    if( dtc_obj_ptr == NULL )
+    if( dtc_obj_ptr[stack_id] == NULL )
     {
         return true;
     }
@@ -361,33 +361,33 @@ int32_t smtc_duty_cycle_band_get_available_toa_ms( smtc_dtc_t* dtc_obj, uint8_t 
     return toa;
 }
 
-bool smtc_duty_cycle_is_channel_free( uint32_t freq_hz )
+bool smtc_duty_cycle_is_channel_free( uint8_t stack_id, uint32_t freq_hz )
 {
-    if( dtc_obj_ptr == NULL )
+    if( dtc_obj_ptr[stack_id] == NULL )
     {
         return true;
     }
-    if( ( dtc_obj_ptr->enabled != SMTC_DTC_ENABLED ) || ( dtc_obj_ptr->number_of_bands == 0 ) )
+    if( ( dtc_obj_ptr[stack_id]->enabled != SMTC_DTC_ENABLED ) || ( dtc_obj_ptr[stack_id]->number_of_bands == 0 ) )
     {
         return true;
     }
 
     uint8_t band;
-    if( smtc_duty_cycle_get_band( dtc_obj_ptr, freq_hz, &band ) == false )
+    if( smtc_duty_cycle_get_band( dtc_obj_ptr[stack_id], freq_hz, &band ) == false )
     {
         return true;
     }
 
-    if( smtc_duty_cycle_band_get_available_toa_ms( dtc_obj_ptr, band ) > 0 )
+    if( smtc_duty_cycle_band_get_available_toa_ms( stack_id, dtc_obj_ptr[stack_id], band ) > 0 )
     {
         return true;
     }
     return false;
 }
 
-bool smtc_duty_cycle_is_band_free( smtc_dtc_t* dtc_obj, uint8_t band )
+bool smtc_duty_cycle_is_band_free( uint8_t stack_id, smtc_dtc_t* dtc_obj, uint8_t band )
 {
-    if( dtc_obj_ptr == NULL )
+    if( dtc_obj_ptr[stack_id] == NULL )
     {
         return true;
     }
@@ -396,20 +396,20 @@ bool smtc_duty_cycle_is_band_free( smtc_dtc_t* dtc_obj, uint8_t band )
         return true;
     }
 
-    if( smtc_duty_cycle_band_get_available_toa_ms( dtc_obj, band ) > 0 )
+    if( smtc_duty_cycle_band_get_available_toa_ms( stack_id, dtc_obj, band ) > 0 )
     {
         return true;
     }
     return false;
 }
 
-int32_t smtc_duty_cycle_get_next_free_time_ms( uint8_t number_of_tx_freq, uint32_t* tx_freq_list )
+int32_t smtc_duty_cycle_get_next_free_time_ms( uint8_t stack_id, uint8_t number_of_tx_freq, uint32_t* tx_freq_list )
 {
-    if( dtc_obj_ptr == NULL )
+    if( dtc_obj_ptr[stack_id] == NULL )
     {
         return 0;
     }
-    if( ( dtc_obj_ptr->enabled != SMTC_DTC_ENABLED ) || ( dtc_obj_ptr->number_of_bands == 0 ) )
+    if( ( dtc_obj_ptr[stack_id]->enabled != SMTC_DTC_ENABLED ) || ( dtc_obj_ptr[stack_id]->number_of_bands == 0 ) )
     {
         return 0;
     }
@@ -428,26 +428,26 @@ int32_t smtc_duty_cycle_get_next_free_time_ms( uint8_t number_of_tx_freq, uint32
     memset( tmp_band_dtc_full, 0xFF, SMTC_DTC_BANDS_MAX );
 
     // Update duty-cycle timing
-    smtc_duty_cycle_update( );
+    smtc_duty_cycle_update( stack_id );
 
     uint8_t band_prev = 0xFF;
     for( uint8_t i = 0; i < number_of_tx_freq; i++ )
     {
         uint8_t band;
-        if( smtc_duty_cycle_get_band( dtc_obj_ptr, tx_freq_list[i], &band ) == true )
+        if( smtc_duty_cycle_get_band( dtc_obj_ptr[stack_id], tx_freq_list[i], &band ) == true )
         {
             if( band_prev != band )
             {
                 band_prev = band;
-                if( smtc_duty_cycle_is_band_free( dtc_obj_ptr, band ) == true )
+                if( smtc_duty_cycle_is_band_free( stack_id, dtc_obj_ptr[stack_id], band ) == true )
                 {
                     // Put unique band in free array
-                    smtc_duty_cycle_put_band_in_array( dtc_obj_ptr, tmp_band_dtc_free, band, &tmp_band_dtc_free_index );
+                    smtc_duty_cycle_put_band_in_array( dtc_obj_ptr[stack_id], tmp_band_dtc_free, band, &tmp_band_dtc_free_index );
                 }
                 else
                 {
                     // Put unique band in full array
-                    smtc_duty_cycle_put_band_in_array( dtc_obj_ptr, tmp_band_dtc_full, band, &tmp_band_dtc_full_index );
+                    smtc_duty_cycle_put_band_in_array( dtc_obj_ptr[stack_id], tmp_band_dtc_full, band, &tmp_band_dtc_full_index );
                 }
             }
         }
@@ -464,7 +464,7 @@ int32_t smtc_duty_cycle_get_next_free_time_ms( uint8_t number_of_tx_freq, uint32
         // return negative value if time available
         for( uint8_t i = 0; i < tmp_band_dtc_free_index; i++ )
         {
-            ret -= smtc_duty_cycle_band_get_available_toa_ms( dtc_obj_ptr, tmp_band_dtc_free[i] );
+            ret -= smtc_duty_cycle_band_get_available_toa_ms( stack_id, dtc_obj_ptr[stack_id], tmp_band_dtc_free[i] );
         }
     }
     else
@@ -477,10 +477,10 @@ int32_t smtc_duty_cycle_get_next_free_time_ms( uint8_t number_of_tx_freq, uint32
         {
             uint8_t band = tmp_band_dtc_full[j];
 
-            uint8_t idx_previous = dtc_obj_ptr->bands[band].index_previous;
+            uint8_t idx_previous = dtc_obj_ptr[stack_id]->bands[band].index_previous;
             // compute index by delta to manage rtc_ms wrapping
             uint32_t timestamp_diff =
-                smtc_duty_cycle_time_diff( rtc_time_now, dtc_obj_ptr->bands[band].toa_timestamp_ms );
+                smtc_duty_cycle_time_diff( rtc_time_now, dtc_obj_ptr[stack_id]->bands[band].toa_timestamp_ms );
             uint8_t idx_new = smtc_duty_cycle_compute_index( timestamp_diff, idx_previous );
 
             // compute time between now and the end of this index
@@ -497,7 +497,7 @@ int32_t smtc_duty_cycle_get_next_free_time_ms( uint8_t number_of_tx_freq, uint32
                 {
                     i = 0;
                 }
-                if( dtc_obj_ptr->bands[band].toa_sum_ms[i] != 0 )
+                if( dtc_obj_ptr[stack_id]->bands[band].toa_sum_ms[i] != 0 )
                 {
                     break;
                 }

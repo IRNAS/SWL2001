@@ -187,13 +187,13 @@ void lr1_stack_mac_region_config( lr1_stack_mac_t* lr1_mac )
 #if defined( STORE_JOIN_SESSION )
     // If we are keeping join session, use the stored values
     if(lr1_mac->join_status != JOINED)
-    {	
+    {
 	lr1_mac->rx2_frequency    = real_const.const_rx2_freq;
 	lr1_mac->rx1_dr_offset    = 0;
 	lr1_mac->rx2_data_rate    = real_const.const_rx2_dr_init;
 	lr1_mac->rx1_delay_s      = real_const.const_received_delay1;
     }
-#else 
+#else
     lr1_mac->rx2_frequency    = real_const.const_rx2_freq;
     lr1_mac->rx1_dr_offset    = 0;
     lr1_mac->rx2_data_rate    = real_const.const_rx2_dr_init;
@@ -282,7 +282,7 @@ void lr1_stack_mac_tx_lora_launch_callback_for_rp( void* rp_void )
     }
     // At this time only tcxo startup delay is remaining
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( true );
+    smtc_modem_hal_set_ant_switch( rp->stack_id,true );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_tx( &( rp->radio->ral ) ) == RAL_STATUS_OK );
     rp_stats_set_tx_timestamp( &rp->stats, smtc_modem_hal_get_time_in_ms( ) );
 }
@@ -302,7 +302,7 @@ void lr1_stack_mac_tx_gfsk_launch_callback_for_rp( void* rp_void )
     }
     // At this time only tcxo startup delay is remaining
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( true );
+    smtc_modem_hal_set_ant_switch( rp->stack_id,true );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_tx( &( rp->radio->ral ) ) == RAL_STATUS_OK );
     rp_stats_set_tx_timestamp( &rp->stats, smtc_modem_hal_get_time_in_ms( ) );
 }
@@ -332,7 +332,7 @@ void lr1_stack_mac_tx_lr_fhss_launch_callback_for_rp( void* rp_void )
     }
     // At this time only tcxo startup delay is remaining
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( true );
+    smtc_modem_hal_set_ant_switch( rp->stack_id,true );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_tx( &( rp->radio->ral ) ) == RAL_STATUS_OK );
     rp_stats_set_tx_timestamp( &rp->stats, smtc_modem_hal_get_time_in_ms( ) );
 }
@@ -352,7 +352,7 @@ void lr1_stack_mac_rx_lora_launch_callback_for_rp( void* rp_void )
     }
     // At this time only tcxo startup delay is remaining
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( false );
+    smtc_modem_hal_set_ant_switch( rp->stack_id,false );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_rx( &( rp->radio->ral ), rp->radio_params[id].rx.timeout_in_ms ) ==
                                      RAL_STATUS_OK );
     rp_stats_set_rx_timestamp( &rp->stats, smtc_modem_hal_get_time_in_ms( ) );
@@ -373,7 +373,7 @@ void lr1_stack_mac_rx_gfsk_launch_callback_for_rp( void* rp_void )
     }
     // At this time only tcxo startup delay is remaining
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( false );
+    smtc_modem_hal_set_ant_switch( rp->stack_id, false );
     SMTC_MODEM_HAL_PANIC_ON_FAILURE( ral_set_rx( &( rp->radio->ral ), rp->radio_params[id].rx.timeout_in_ms ) ==
                                      RAL_STATUS_OK );
     rp_stats_set_rx_timestamp( &rp->stats, smtc_modem_hal_get_time_in_ms( ) );
@@ -515,7 +515,7 @@ void lr1_stack_mac_tx_radio_start( lr1_stack_mac_t* lr1_mac )
     rp_task.start_time_ms    = lr1_mac->rtc_target_timer_ms;
     if( lr1_mac->send_at_time == true )
     {
-        rp_task.start_time_ms -= smtc_modem_hal_get_radio_tcxo_startup_delay_ms( );
+        rp_task.start_time_ms -= smtc_modem_hal_get_radio_tcxo_startup_delay_ms( lr1_mac->stack_id );
         lr1_mac->send_at_time = false;  // reinit the flag
         rp_task.state         = RP_TASK_STATE_SCHEDULE;
     }
@@ -751,8 +751,8 @@ void lr1_stack_mac_rp_callback( lr1_stack_mac_t* lr1_mac )
                                   ( lr1_mac->isr_tx_done_radio_timestamp + rx_delay_ms +
                                     lr1_mac->rx_timeout_symb_in_ms + lr1_mac->rx_offset_ms ) -
                                   lr1_mac->fine_tune_board_setting_delay_ms[lr1_mac->rx_data_rate] -
-                                  smtc_modem_hal_get_radio_tcxo_startup_delay_ms( ) -
-                                  smtc_modem_hal_get_board_delay_ms( );
+                                  smtc_modem_hal_get_radio_tcxo_startup_delay_ms( lr1_mac->stack_id ) -
+                                  smtc_modem_hal_get_board_delay_ms( lr1_mac->stack_id );
 
         SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG(
             "DR%u Fine tune correction (ms) = %d, error fine tune (ms) = %d, lr1_mac->rx_offset_ms = %d\n",
@@ -864,8 +864,8 @@ bool lr1_stack_mac_rx_timer_configure( lr1_stack_mac_t* lr1_mac, const rx_win_ty
             SMTC_MODEM_HAL_PANIC( "MODULATION NOT SUPPORTED\n" );
         }
 
-        uint32_t board_delay_ms = smtc_modem_hal_get_radio_tcxo_startup_delay_ms( ) +
-                                  +smtc_modem_hal_get_board_delay_ms( ) +
+        uint32_t board_delay_ms = smtc_modem_hal_get_radio_tcxo_startup_delay_ms( lr1_mac->stack_id ) +
+                                  +smtc_modem_hal_get_board_delay_ms( lr1_mac->stack_id ) +
                                   lr1_mac->fine_tune_board_setting_delay_ms[lr1_mac->rx_data_rate];
 
 #if defined( ADD_RELAY_TX )
