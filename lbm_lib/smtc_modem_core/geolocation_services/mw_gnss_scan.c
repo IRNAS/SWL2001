@@ -60,6 +60,8 @@
 #include "lr11xx_system.h"
 #include "lr11xx_gnss.h"
 
+// EvaTODO: Add multistack support
+
 /*
  * -----------------------------------------------------------------------------
  * --- PRIVATE MACROS-----------------------------------------------------------
@@ -271,8 +273,8 @@ void mw_gnss_scan_services_init( uint8_t* service_id, uint8_t task_id,
     *on_launch_callback          = mw_gnss_scan_service_on_launch;
     *on_update_callback          = mw_gnss_scan_service_on_update;
     *context_callback            = ( void* ) service_id;
-    rp_hook_init( modem_get_rp( ), mw_gnss_task_obj.rp_hook_id, ( void ( * )( void* ) )( gnss_rp_task_done ),
-                  modem_get_rp( ) );
+    rp_hook_init( modem_get_rp( 0 ), mw_gnss_task_obj.rp_hook_id, ( void ( * )( void* ) )( gnss_rp_task_done ),
+                  modem_get_rp( 0 ) );
 
     /* Configuration */
     mw_gnss_task_obj.constellations_mask = LR11XX_GNSS_GPS_MASK | LR11XX_GNSS_BEIDOU_MASK;
@@ -456,7 +458,7 @@ static void mw_gnss_scan_service_on_launch( void* context_callback )
     rp_task.type                           = RP_TASK_TYPE_GNSS_SNIFF;
     rp_task.launch_task_callbacks          = gnss_rp_task_launch;
     rp_radio_params_t fake_rp_radio_params = { 0 };
-    if( rp_task_enqueue( modem_get_rp( ), &rp_task, NULL, 0, &fake_rp_radio_params ) != RP_HOOK_STATUS_OK )
+    if( rp_task_enqueue( modem_get_rp( 0 ), &rp_task, NULL, 0, &fake_rp_radio_params ) != RP_HOOK_STATUS_OK )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "Failed to enqueue RP task for GNSS scan\n" );
         SMTC_MODEM_HAL_PANIC( );
@@ -500,7 +502,7 @@ static void gnss_scan_next( uint32_t delay_s )
     rp_task.type                           = RP_TASK_TYPE_GNSS_SNIFF;
     rp_task.launch_task_callbacks          = gnss_rp_task_launch;
     rp_radio_params_t fake_rp_radio_params = { 0 };
-    if( rp_task_enqueue( modem_get_rp( ), &rp_task, NULL, 0, &fake_rp_radio_params ) != RP_HOOK_STATUS_OK )
+    if( rp_task_enqueue( modem_get_rp( 0 ), &rp_task, NULL, 0, &fake_rp_radio_params ) != RP_HOOK_STATUS_OK )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "Failed to enqueue RP task for GNSS scan\n" );
         SMTC_MODEM_HAL_PANIC( );
@@ -633,23 +635,23 @@ static void gnss_rp_task_launch( void* context )
     }
 
     /* Prepare for scan */
-    lr11xx_status = lr11xx_system_set_dio_irq_params( modem_get_radio_ctx( ), LR11XX_SYSTEM_IRQ_GNSS_SCAN_DONE,
+    lr11xx_status = lr11xx_system_set_dio_irq_params( modem_get_radio_ctx( 0 ), LR11XX_SYSTEM_IRQ_GNSS_SCAN_DONE,
                                                       LR11XX_SYSTEM_IRQ_NONE );
     if( lr11xx_status != LR11XX_STATUS_OK )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "gnss_rp_task_launch: Failed to set irq params\n" );
         mw_gnss_task_obj.self_aborted = true; /* Stop the current NAV group */
-        rp_task_abort( modem_get_rp( ), RP_HOOK_ID_DIRECT_RP_ACCESS_GNSS );
+        rp_task_abort( modem_get_rp( 0 ), RP_HOOK_ID_DIRECT_RP_ACCESS_GNSS );
         return;
     }
 
     lr11xx_status =
-        lr11xx_gnss_set_constellations_to_use( modem_get_radio_ctx( ), mw_gnss_task_obj.constellations_mask );
+        lr11xx_gnss_set_constellations_to_use( modem_get_radio_ctx( 0 ), mw_gnss_task_obj.constellations_mask );
     if( lr11xx_status != LR11XX_STATUS_OK )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "gnss_rp_task_launch: Failed to set constellations\n" );
         mw_gnss_task_obj.self_aborted = true; /* Stop the current NAV group */
-        rp_task_abort( modem_get_rp( ), RP_HOOK_ID_DIRECT_RP_ACCESS_GNSS );
+        rp_task_abort( modem_get_rp( 0 ), RP_HOOK_ID_DIRECT_RP_ACCESS_GNSS );
         return;
     }
 
@@ -671,29 +673,29 @@ static void gnss_rp_task_launch( void* context )
             GNSS_SCAN_TRACE_PRINTF_DEBUG( " - elapsed time since end of previous valid scan: %u ms\n",
                                           time_since_end_of_previous_scan_ms );
             mw_gnss_task_obj.self_aborted = true; /* Stop the current NAV group */
-            rp_task_abort( modem_get_rp( ), RP_HOOK_ID_DIRECT_RP_ACCESS_GNSS );
+            rp_task_abort( modem_get_rp( 0 ), RP_HOOK_ID_DIRECT_RP_ACCESS_GNSS );
             return;
         }
     }
 
-    if( mw_radio_configure_for_scan( modem_get_radio_ctx( ) ) == false )
+    if( mw_radio_configure_for_scan( modem_get_radio_ctx( 0 ) ) == false )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "gnss_rp_task_launch: mw_radio_configure_for_scan() failed\n" );
         mw_gnss_task_obj.self_aborted = true; /* Stop the current NAV group */
-        rp_task_abort( modem_get_rp( ), RP_HOOK_ID_DIRECT_RP_ACCESS_GNSS );
+        rp_task_abort( modem_get_rp( 0 ), RP_HOOK_ID_DIRECT_RP_ACCESS_GNSS );
         return;
     }
 
     /* Start scan */
     uint8_t scan_parameters = LR11XX_GNSS_RESULTS_DOPPLER_ENABLE_MASK | LR11XX_GNSS_RESULTS_DOPPLER_MASK |
                               LR11XX_GNSS_RESULTS_DEMODULATE_TIME_MASK;
-    lr11xx_status = lr11xx_gnss_scan( modem_get_radio_ctx( ), LR11XX_GNSS_OPTION_MID_EFFORT, scan_parameters,
+    lr11xx_status = lr11xx_gnss_scan( modem_get_radio_ctx( 0 ), LR11XX_GNSS_OPTION_MID_EFFORT, scan_parameters,
                                       GNSS_RESULT_NB_SVS_MAX );
     if( lr11xx_status != LR11XX_STATUS_OK )
     {
         SMTC_MODEM_HAL_TRACE_ERROR( "lr11xx_gnss_scan() failed\n" );
         mw_gnss_task_obj.self_aborted = true; /* Stop the current NAV group */
-        rp_task_abort( modem_get_rp( ), RP_HOOK_ID_DIRECT_RP_ACCESS_GNSS );
+        rp_task_abort( modem_get_rp( 0 ), RP_HOOK_ID_DIRECT_RP_ACCESS_GNSS );
         return;
     }
 }
@@ -745,7 +747,7 @@ static void gnss_rp_task_done( void* status )
     {
         bool             scan_done = false;
         mw_return_code_t mw_status = gnss_scan_task_done( &scan_done );
-        mw_radio_set_sleep( modem_get_radio_ctx( ) ); /* Set the radio back to sleep when all radio accesses are done */
+        mw_radio_set_sleep( modem_get_radio_ctx( 0 ) ); /* Set the radio back to sleep when all radio accesses are done */
         if( ( mw_status == MW_RC_OK ) && ( scan_done == false ) )
         {
             gnss_scan_next( modes[mw_gnss_task_obj.current_mode_index].scan_group_delay );
@@ -790,7 +792,7 @@ static mw_return_code_t gnss_scan_task_done( bool* navgroup_complete )
     uint8_t scan_index = navgroup.nb_scans_valid;
 
     /* Get current gps time (nb of seconds modulo 1024 weeks) */
-    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_time( modem_get_radio_ctx( ), &gps_time ) == LR11XX_STATUS_OK );
+    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_time( modem_get_radio_ctx( 0 ), &gps_time ) == LR11XX_STATUS_OK );
     if( gps_time.error_code == LR11XX_GNSS_READ_TIME_STATUS_NO_ERROR )
     {
         GNSS_SCAN_TRACE_PRINTF_DEBUG( "GPS time: %u (0x%08X)\n", gps_time.gps_time_s, gps_time.gps_time_s );
@@ -809,22 +811,22 @@ static mw_return_code_t gnss_scan_task_done( bool* navgroup_complete )
 
     /* Get scan mode used for this scan (autonomous, assisted... ) */
     MW_RETURN_ON_FAILURE( lr11xx_gnss_read_last_scan_mode_launched(
-                              modem_get_radio_ctx( ), &( mw_gnss_task_obj.last_scan_mode ) ) == LR11XX_STATUS_OK );
+                              modem_get_radio_ctx( 0 ), &( mw_gnss_task_obj.last_scan_mode ) ) == LR11XX_STATUS_OK );
     GNSS_SCAN_TRACE_PRINTF_DEBUG( "Last GNSS scan mode launched: %s\n",
                                   smtc_gnss_scan_mode_launched_enum2str( mw_gnss_task_obj.last_scan_mode ) );
     navgroup.scans[scan_index].scan_mode_launched = mw_gnss_task_obj.last_scan_mode;
 
     /* Get current almanac CRC */
-    MW_RETURN_ON_FAILURE( lr11xx_gnss_get_context_status( modem_get_radio_ctx( ), context_status_bytestream ) ==
+    MW_RETURN_ON_FAILURE( lr11xx_gnss_get_context_status( modem_get_radio_ctx( 0 ), context_status_bytestream ) ==
                           LR11XX_STATUS_OK );
     MW_RETURN_ON_FAILURE( lr11xx_gnss_parse_context_status_buffer( context_status_bytestream, &context_status ) ==
                           LR11XX_STATUS_OK );
     mw_gnss_task_obj.current_almanac_crc = context_status.global_almanac_crc;
 
     /* Get results */
-    MW_RETURN_ON_FAILURE( lr11xx_gnss_get_result_size( modem_get_radio_ctx( ), &scan_result_size ) ==
+    MW_RETURN_ON_FAILURE( lr11xx_gnss_get_result_size( modem_get_radio_ctx( 0 ), &scan_result_size ) ==
                           LR11XX_STATUS_OK );
-    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_results( modem_get_radio_ctx( ), navgroup.scans[scan_index].results_buffer,
+    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_results( modem_get_radio_ctx( 0 ), navgroup.scans[scan_index].results_buffer,
                                                     scan_result_size ) == LR11XX_STATUS_OK );
     GNSS_SCAN_TRACE_ARRAY_DEBUG( "NAV3", navgroup.scans[scan_index].results_buffer, scan_result_size );
 
@@ -833,14 +835,14 @@ static mw_return_code_t gnss_scan_task_done( bool* navgroup_complete )
 
     /* Fetch the detected SVs */
     MW_RETURN_ON_FAILURE(
-        lr11xx_gnss_get_nb_detected_satellites( modem_get_radio_ctx( ), &navgroup.scans[scan_index].nb_detected_svs ) ==
+        lr11xx_gnss_get_nb_detected_satellites( modem_get_radio_ctx( 0 ), &navgroup.scans[scan_index].nb_detected_svs ) ==
         LR11XX_STATUS_OK );
 
     /* Get details about all detected SVs (even if not given in NAV) */
     if( navgroup.scans[scan_index].nb_detected_svs > 0 )
     {
         MW_RETURN_ON_FAILURE(
-            lr11xx_gnss_get_detected_satellites( modem_get_radio_ctx( ), navgroup.scans[scan_index].nb_detected_svs,
+            lr11xx_gnss_get_detected_satellites( modem_get_radio_ctx( 0 ), navgroup.scans[scan_index].nb_detected_svs,
                                                  navgroup.scans[scan_index].info_svs ) == LR11XX_STATUS_OK );
     }
 
@@ -859,7 +861,7 @@ static mw_return_code_t gnss_scan_task_done( bool* navgroup_complete )
             SMTC_MODEM_HAL_TRACE_WARNING( "GNSS: ASSISTANCE_POSITION_POSSIBLY_WRONG_BUT_FAILS_TO_UPDATE\n" );
             SMTC_MODEM_HAL_TRACE_INFO( "Reset current position\n" );
             /* Reset current position and let LR11xx restart with autonomous scan to recover */
-            MW_RETURN_ON_FAILURE( lr11xx_gnss_reset_position( modem_get_radio_ctx( ) ) == LR11XX_STATUS_OK );
+            MW_RETURN_ON_FAILURE( lr11xx_gnss_reset_position( modem_get_radio_ctx( 0 ) ) == LR11XX_STATUS_OK );
             break;
         default:
             SMTC_MODEM_HAL_TRACE_INFO( "GNSS message to host: %s\n",
@@ -869,13 +871,13 @@ static mw_return_code_t gnss_scan_task_done( bool* navgroup_complete )
     }
 
     /* Get current assistance position (could have been reset above) */
-    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_assistance_position( modem_get_radio_ctx( ), &aiding_pos ) ==
+    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_assistance_position( modem_get_radio_ctx( 0 ), &aiding_pos ) ==
                           LR11XX_STATUS_OK );
     smtc_gnss_trace_print_position( "Assistance Position: ", &aiding_pos );
     navgroup.scans[scan_index].aiding_position = aiding_pos;
 
     /* Get Power consumption */
-    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_cumulative_timing( modem_get_radio_ctx( ), &cumulative_timing ) ==
+    MW_RETURN_ON_FAILURE( lr11xx_gnss_read_cumulative_timing( modem_get_radio_ctx( 0 ), &cumulative_timing ) ==
                           LR11XX_STATUS_OK );
     geolocation_bsp_gnss_get_consumption( &instantaneous_power_consumption_ua );
     lr11xx_gnss_compute_power_consumption( &cumulative_timing, &instantaneous_power_consumption_ua,

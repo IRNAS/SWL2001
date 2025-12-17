@@ -669,7 +669,7 @@ uint8_t smtc_real_get_number_of_chmask_in_cflist( smtc_real_t* real )
     return ERRORLORAWAN;  // never reach => avoid warning
 }
 
-status_lorawan_t smtc_real_get_next_channel( smtc_real_t* real, uint8_t tx_data_rate, uint32_t* out_tx_frequency,
+status_lorawan_t smtc_real_get_next_channel( uint8_t stack_id, smtc_real_t* real, uint8_t tx_data_rate, uint32_t* out_tx_frequency,
                                              uint32_t* out_rx1_frequency, uint8_t* out_nb_available_tx_channel )
 {
     switch( real->region_type )
@@ -684,7 +684,7 @@ status_lorawan_t smtc_real_get_next_channel( smtc_real_t* real, uint8_t tx_data_
 #if defined( REGION_EU_868 )
     case SMTC_REAL_REGION_EU_868:
     {
-        return region_eu_868_get_next_channel( real, tx_data_rate, out_tx_frequency, out_rx1_frequency,
+        return region_eu_868_get_next_channel( stack_id, real, tx_data_rate, out_tx_frequency, out_rx1_frequency,
                                                out_nb_available_tx_channel );
     }
 #endif
@@ -745,7 +745,7 @@ status_lorawan_t smtc_real_get_next_channel( smtc_real_t* real, uint8_t tx_data_
 #if defined( REGION_RU_864 )
     case SMTC_REAL_REGION_RU_864:
     {
-        return region_ru_864_get_next_channel( real, tx_data_rate, out_tx_frequency, out_rx1_frequency,
+        return region_ru_864_get_next_channel( stack_id, real, tx_data_rate, out_tx_frequency, out_rx1_frequency,
                                                out_nb_available_tx_channel );
     }
 #endif
@@ -756,7 +756,7 @@ status_lorawan_t smtc_real_get_next_channel( smtc_real_t* real, uint8_t tx_data_
     return ERRORLORAWAN;  // never reach => avoid warning
 }
 
-status_lorawan_t smtc_real_get_join_next_channel( smtc_real_t* real, uint8_t* tx_data_rate, uint32_t* out_tx_frequency,
+status_lorawan_t smtc_real_get_join_next_channel( uint8_t stack_id, smtc_real_t* real, uint8_t* tx_data_rate, uint32_t* out_tx_frequency,
                                                   uint32_t* out_rx1_frequency, uint32_t* out_rx2_frequency,
                                                   uint8_t* out_nb_available_tx_channel )
 {
@@ -772,7 +772,7 @@ status_lorawan_t smtc_real_get_join_next_channel( smtc_real_t* real, uint8_t* tx
 #if defined( REGION_EU_868 )
     case SMTC_REAL_REGION_EU_868:
     {
-        return region_eu_868_get_join_next_channel( real, *tx_data_rate, out_tx_frequency, out_rx1_frequency,
+        return region_eu_868_get_join_next_channel( stack_id, real, *tx_data_rate, out_tx_frequency, out_rx1_frequency,
                                                     out_nb_available_tx_channel );
     }
 #endif
@@ -833,7 +833,7 @@ status_lorawan_t smtc_real_get_join_next_channel( smtc_real_t* real, uint8_t* tx
 #if defined( REGION_RU_864 )
     case SMTC_REAL_REGION_RU_864:
     {
-        return region_ru_864_get_join_next_channel( real, *tx_data_rate, out_tx_frequency, out_rx1_frequency,
+        return region_ru_864_get_join_next_channel( stack_id, real, *tx_data_rate, out_tx_frequency, out_rx1_frequency,
                                                     out_nb_available_tx_channel );
     }
 #endif

@@ -172,18 +172,20 @@ void wor_ral_callback_start_rx( void* rp_void );
 /**
  * @brief   Fill rp_radio_params_t struct to received LoRaWAN Uplink after a WOR
  *
+ * @param[in]   stack_id    Stack ID
  * @param[in]   real        Regional Abstraction Layer object
  * @param[in]   max_payload Maximum payload to be received
  * @param[in]   dr          Datarate of the uplink
  * @param[in]   freq_hz     Frequency of the uplink
  * @param[out]  param       Radio parameter structure with LoRaWAN Uplink
  */
-void wor_ral_init_rx_msg( smtc_real_t* real, uint8_t max_payload, uint8_t dr, uint32_t freq_hz,
+void wor_ral_init_rx_msg( uint8_t stack_id, smtc_real_t* real, uint8_t max_payload, uint8_t dr, uint32_t freq_hz,
                           rp_radio_params_t* param );
 
 /**
  * @brief Fill rp_radio_params_t struct for periodic CAD
  *
+ * @param[in]   stack_id    Stack ID
  * @param[in]   radio       radio pointer
  * @param[in]   lr1_mac     Lr1mac object
  * @param[in]   dr          Datarate of the CAD
@@ -192,7 +194,7 @@ void wor_ral_init_rx_msg( smtc_real_t* real, uint8_t max_payload, uint8_t dr, ui
  * @param[in]   wor_toa_ms  TOA of the WOR to be received
  * @param[out]  param       Radio parameter structure with CAD infos
  */
-void wor_ral_init_cad( const ralf_t* radio, smtc_real_t* lr1_mac, uint8_t dr, wor_cad_periodicity_t cad_period,
+void wor_ral_init_cad( uint8_t stack_id, const ralf_t* radio, smtc_real_t* lr1_mac, uint8_t dr, wor_cad_periodicity_t cad_period,
                        bool is_first, uint32_t wor_toa_ms, ral_lora_cad_params_t* param );
 #ifdef _cplusplus
 }

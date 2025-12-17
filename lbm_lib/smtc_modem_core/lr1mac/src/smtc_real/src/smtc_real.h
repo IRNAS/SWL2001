@@ -170,7 +170,7 @@ uint8_t smtc_real_get_number_of_chmask_in_cflist( smtc_real_t* real );
  * \param [IN]  none
  * \param [OUT] return
  */
-status_lorawan_t smtc_real_get_next_channel( smtc_real_t* real, uint8_t tx_data_rate, uint32_t* out_tx_frequency,
+status_lorawan_t smtc_real_get_next_channel( uint8_t stack_id, smtc_real_t* real, uint8_t tx_data_rate, uint32_t* out_tx_frequency,
                                              uint32_t* out_rx1_frequency, uint8_t* out_nb_available_tx_channel );
 
 /**
@@ -179,7 +179,7 @@ status_lorawan_t smtc_real_get_next_channel( smtc_real_t* real, uint8_t tx_data_
  * \param [IN]  none
  * \param [OUT] return
  */
-status_lorawan_t smtc_real_get_join_next_channel( smtc_real_t* real, uint8_t* tx_data_rate, uint32_t* out_tx_frequency,
+status_lorawan_t smtc_real_get_join_next_channel( uint8_t stack_id, smtc_real_t* real, uint8_t* tx_data_rate, uint32_t* out_tx_frequency,
                                                   uint32_t* out_rx1_frequency, uint32_t* out_rx2_frequency,
                                                   uint8_t* out_nb_available_tx_channel );
 

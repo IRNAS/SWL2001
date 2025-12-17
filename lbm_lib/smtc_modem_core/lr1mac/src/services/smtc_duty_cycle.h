@@ -126,19 +126,22 @@ static const uint32_t smtc_dtc_resolution_ms = ( ( ( SMTC_DTC_SECONDS_BY_UNIT * 
 /**
  * @brief Duty cycle initialization
  *
+ * @param stack_id                 Stack id
+ *
  */
-void smtc_duty_cycle_init( void );
+void smtc_duty_cycle_init( uint8_t stack_id );
 
 /**
  * @brief Duty cycle configuration
  *
+ * @param stack_id                 Stack id
  * @param number_of_bands           Number of bands in this region
  * @param band_idx                  Index bands to store configuration
  * @param duty_cycle_regulation     Duty cycle limitation on this band
  * @param freq_min                  Frequency min on this band
  * @param freq_max                  Frequency max on this band
  */
-void smtc_duty_cycle_config( uint8_t number_of_bands, uint8_t band_idx, uint16_t duty_cycle_regulation,
+void smtc_duty_cycle_config( uint8_t stack_id, uint8_t number_of_bands, uint8_t band_idx, uint16_t duty_cycle_regulation,
                              uint32_t freq_min, uint32_t freq_max );
 
 /**
@@ -146,90 +149,101 @@ void smtc_duty_cycle_config( uint8_t number_of_bands, uint8_t band_idx, uint16_t
  *
  * @remark When disabled the TOA is take into account, but no restriction if DTC full consumed
  *
+ * @param stack_id                 Stack id
  * @param enable                    Enable: true, Disabled: false,
  * @return smtc_dtc_rc_t
  */
-smtc_dtc_rc_t smtc_duty_cycle_enable_set( smtc_dtc_enablement_type_t enable );
+smtc_dtc_rc_t smtc_duty_cycle_enable_set( uint8_t stack_id, smtc_dtc_enablement_type_t enable );
 
 /**
  * @brief Duty cycle enablement status
  *
+ * @param stack_id                 Stack id
+ *
  * @return smtc_dtc_enablement_type_t
  */
-smtc_dtc_enablement_type_t smtc_duty_cycle_enable_get( void );
+smtc_dtc_enablement_type_t smtc_duty_cycle_enable_get( uint8_t stack_id );
 
 /**
  * @brief Sum Time On Air for a specified freq (inside a band)
  *
  * @remark smtc_duty_cycle_update() must be called before this function to have a right value
  *
+ * @param stack_id                 Stack id
  * @param freq_hz                   Frequency used for the packet
  * @param toa_ms                    Packet Time On Air in milliseconds
  */
-void smtc_duty_cycle_sum( uint32_t freq_hz, uint32_t toa_ms );
+void smtc_duty_cycle_sum( uint8_t stack_id, uint32_t freq_hz, uint32_t toa_ms );
 
 /**
  * @brief  Update Time On Air
  *
+ * @param stack_id                 Stack id
+ *
  * @remark smtc_duty_cycle_update() must be called before check Duty Cycle available
  *
  */
-void smtc_duty_cycle_update( void );
+void smtc_duty_cycle_update( uint8_t stack_id );
 
 /**
  * @brief Check if Time On Air is not greater than TOA available for a frequency
  *
  * @remark  smtc_duty_cycle_update() must be called before this function to have a right value
  *
+ * @param stack_id                 Stack id
  * @param dtc_obj                   Contains the duty cycle context
  * @param freq_hz                   Frequency used for the packet
  * @param toa_ms                    Packet Time On Air in milliseconds
  * @return bool
  */
-bool smtc_duty_cycle_is_toa_accepted( smtc_dtc_t* dtc_obj, uint32_t freq_hz, uint32_t toa_ms );
+bool smtc_duty_cycle_is_toa_accepted( uint8_t stack_id, smtc_dtc_t* dtc_obj, uint32_t freq_hz, uint32_t toa_ms );
 
 /**
  * @brief Get Time On Air available in a band
  *
  * @remark  smtc_duty_cycle_update() must be called before this function to have a right value
  *
+ * @param stack_id                 Stack id
  * @param dtc_obj                   Contains the duty cycle context
  * @param band                      Band id
  * @return int32_t                  return Time On Air available
  */
-int32_t smtc_duty_cycle_band_get_available_toa_ms( smtc_dtc_t* dtc_obj, uint8_t band );
+int32_t smtc_duty_cycle_band_get_available_toa_ms( uint8_t stack_id, smtc_dtc_t* dtc_obj, uint8_t band );
 
 /**
  * @brief Check if a channel is Duty Cycle free
  *
  * @remark  smtc_duty_cycle_update() must be called before this function to have a right value
  *
+ * @param stack_id                 Stack id
  * @param freq_hz                   Frequency that need a check
  * @return bool
  */
-bool smtc_duty_cycle_is_channel_free( uint32_t freq_hz );
+bool smtc_duty_cycle_is_channel_free( uint8_t stack_id, uint32_t freq_hz );
 
 /**
  * @brief Check if a band is Duty Cycle free
  *
  * @remark  smtc_duty_cycle_update() must be called before this function to have a right value
  *
+ * @param stack_id                 Stack id
  * @param dtc_obj                   Contains the duty cycle context
  * @param band                      Band that need a check
  * @return bool
  */
-bool smtc_duty_cycle_is_band_free( smtc_dtc_t* dtc_obj, uint8_t band );
+bool smtc_duty_cycle_is_band_free( uint8_t stack_id, smtc_dtc_t* dtc_obj, uint8_t band );
 
 /**
  * @brief Get the next available slot with free duty cycle
  *
  * @remark  smtc_duty_cycle_update() must be called before this function to have a right value
  *
+ * @param stack_id                 Stack id
  * @param number_of_tx_freq         number of tx freq in list
  * @param tx_freq_list              tx frequency list used by the app to check only duty cycle in these bands
  * @return int32_t                  milliseconds, if > 0: the next slot availble, else the available time
  */
-int32_t smtc_duty_cycle_get_next_free_time_ms( uint8_t number_of_tx_freq, uint32_t* tx_freq_list );
+int32_t smtc_duty_cycle_get_next_free_time_ms( uint8_t stack_id, uint8_t number_of_tx_freq, uint32_t* tx_freq_list );
 #ifdef __cplusplus
 }
 #endif

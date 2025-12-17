@@ -118,24 +118,25 @@ uint16_t fifo_ctrl_get_free_space( const fifo_ctrl_t* ctrl )
     return ctrl->free_space;
 }
 
-fifo_return_status_t fifo_ctrl_get( fifo_ctrl_t* ctrl, uint8_t* buffer, uint16_t* data_len,
+fifo_return_status_t fifo_ctrl_get( uint8_t stack_id, fifo_ctrl_t* ctrl, uint8_t* buffer, uint16_t* data_len,
                                     const uint16_t data_buffer_size, void* metadata, uint8_t* metadata_len,
                                     const uint8_t metadata_buffer_size )
 {
-    smtc_modem_hal_disable_modem_irq( );
+    smtc_modem_hal_disable_modem_irq( stack_id );
     fifo_return_status_t ret =
         ctrl_get( ctrl, buffer, data_len, data_buffer_size, metadata, metadata_len, metadata_buffer_size );
-    smtc_modem_hal_enable_modem_irq( );
+    smtc_modem_hal_enable_modem_irq( stack_id );
 
     return ret;
 }
 
-fifo_return_status_t fifo_ctrl_set( fifo_ctrl_t* ctrl, const uint8_t* buffer, const uint16_t buffer_len,
+fifo_return_status_t fifo_ctrl_set( uint8_t stack_id, fifo_ctrl_t* ctrl, const uint8_t* buffer, const uint16_t buffer_len,
                                     const void* metadata, const uint8_t metadata_len )
 {
-    smtc_modem_hal_disable_modem_irq( );
+    smtc_modem_hal_disable_modem_irq( stack_id );
     fifo_return_status_t ret = ctrl_set( ctrl, buffer, buffer_len, metadata, metadata_len );
-    smtc_modem_hal_enable_modem_irq( );
+    smtc_modem_hal_enable_modem_irq( stack_id );
+
     return ret;
 }
 

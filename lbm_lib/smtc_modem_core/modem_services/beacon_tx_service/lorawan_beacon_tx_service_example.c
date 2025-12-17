@@ -49,6 +49,9 @@
 #include "radio_planner.h"
 #include "radio_planner_hook_id_defs.h"
 #include "modem_tx_protocol_manager.h"
+
+// EvaTODO: add multistack support
+
 /*
  * -----------------------------------------------------------------------------
  * --- PRIVATE MACROS-----------------------------------------------------------
@@ -127,8 +130,8 @@ void lorawan_beacon_tx_example_service_init( uint8_t* service_id, uint8_t task_i
     *on_launch_callback                       = lorawan_beacon_tx_example_service_on_launch;
     *on_update_callback                       = lorawan_beacon_tx_example_service_on_update;
     *context_callback                         = ( void* ) service_id;
-    rp_hook_init( modem_get_rp( ), RP_HOOK_ID_DIRECT_RP_ACCESS, ( void ( * )( void* ) )( end_user_beacon_callback ),
-                  modem_get_rp( ) );
+    rp_hook_init( modem_get_rp( 0 ), RP_HOOK_ID_DIRECT_RP_ACCESS, ( void ( * )( void* ) )( end_user_beacon_callback ),
+                  modem_get_rp( 0 ) );
     //  lorawan_beacon_tx_example_add_task (CURRENT_STACK);
 }
 
@@ -223,9 +226,9 @@ static void start_user_beacon_callback( void* context )
     lora_param.pkt_params.preamble_len_in_symb = 10;
 
     smtc_modem_hal_start_radio_tcxo( );
-    smtc_modem_hal_set_ant_switch( true );
-    SMTC_MODEM_HAL_PANIC_ON_FAILURE( ralf_setup_lora( ( modem_get_rp( )->radio ), &lora_param ) == RAL_STATUS_OK );
-    ral_set_dio_irq_params( &( modem_get_rp( )->radio->ral ), RAL_IRQ_TX_DONE );
+    smtc_modem_hal_set_ant_switch( lorawan_beacon_tx_example_obj.stack_id, true );
+    SMTC_MODEM_HAL_PANIC_ON_FAILURE( ralf_setup_lora( ( modem_get_rp( 0 )->radio ), &lora_param ) == RAL_STATUS_OK );
+    ral_set_dio_irq_params( &( modem_get_rp( 0 )->radio->ral ), RAL_IRQ_TX_DONE );
     uint8_t payload[17];
     memset( payload, 0, 17 );
 
@@ -236,8 +239,8 @@ static void start_user_beacon_callback( void* context )
     uint16_t computed_crc = crc16_tx_beacon( payload, 6 );
     payload[6]            = ( computed_crc ) & 0x00FF;
     payload[7]            = ( computed_crc >> 8 ) & 0x00FF;
-    ral_set_pkt_payload( &( modem_get_rp( )->radio->ral ), payload, 17 );
-    ral_set_tx( &( modem_get_rp( )->radio->ral ) );
+    ral_set_pkt_payload( &( modem_get_rp( 0 )->radio->ral ), payload, 17 );
+    ral_set_tx( &( modem_get_rp( 0 )->radio->ral ) );
 }
 
 static void end_user_beacon_callback( void* status )
@@ -264,7 +267,7 @@ static void start_user_beacon( void )
     rp_task.type                           = RP_TASK_TYPE_TX_LORA;
     rp_task.launch_task_callbacks          = start_user_beacon_callback;
     rp_radio_params_t fake_rp_radio_params = { 0 };
-    if( rp_task_enqueue( modem_get_rp( ), &rp_task, NULL, 0, &fake_rp_radio_params ) != RP_HOOK_STATUS_OK )
+    if( rp_task_enqueue( modem_get_rp( 0 ), &rp_task, NULL, 0, &fake_rp_radio_params ) != RP_HOOK_STATUS_OK )
     {
         SMTC_MODEM_HAL_TRACE_PRINTF( "beacon START ERROR \n" );
     }

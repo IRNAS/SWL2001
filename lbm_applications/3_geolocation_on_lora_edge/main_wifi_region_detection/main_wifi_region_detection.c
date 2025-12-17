@@ -82,7 +82,7 @@
  */
 
 /**
- * Stack id value (multistacks modem is not yet available)
+ * Stack id value (multistacks modem is not yet available) - EvaTODO: Not yet supported
  */
 #define STACK_ID 0
 
@@ -364,13 +364,13 @@ static bool check_lr11xx_fw_version( void )
     lr11xx_system_version_t lr11xx_fw_version;
 
     /* suspend modem to get access to the radio */
-    smtc_modem_suspend_radio_communications( true );
+    smtc_modem_suspend_radio_communications( STACK_ID, true );
 
     status = lr11xx_system_get_version( NULL, &lr11xx_fw_version );
     if( status != LR11XX_STATUS_OK )
     {
         SMTC_HAL_TRACE_ERROR( "Failed to get LR11XX firmware version\n" );
-        smtc_modem_suspend_radio_communications( false );
+        smtc_modem_suspend_radio_communications( STACK_ID, false );
         return false;
     }
 
@@ -379,7 +379,7 @@ static bool check_lr11xx_fw_version( void )
     {
         SMTC_HAL_TRACE_ERROR( "Wrong LR1110 firmware version, expected 0x%04X, got 0x%04X\n", LR1110_FW_VERSION,
                               lr11xx_fw_version.fw );
-        smtc_modem_suspend_radio_communications( false );
+        smtc_modem_suspend_radio_communications( STACK_ID, false );
         return false;
     }
     if( ( lr11xx_fw_version.type == LR11XX_SYSTEM_VERSION_TYPE_LR1120 ) &&
@@ -387,12 +387,12 @@ static bool check_lr11xx_fw_version( void )
     {
         SMTC_HAL_TRACE_ERROR( "Wrong LR1120 firmware version, expected 0x%04X, got 0x%04X\n", LR1120_FW_VERSION,
                               lr11xx_fw_version.fw );
-        smtc_modem_suspend_radio_communications( false );
+        smtc_modem_suspend_radio_communications( STACK_ID, false );
         return false;
     }
 
     /* release radio to the modem */
-    smtc_modem_suspend_radio_communications( false );
+    smtc_modem_suspend_radio_communications( STACK_ID, false );
     SMTC_HAL_TRACE_INFO( "LR11XX FW: 0x%04X, type: 0x%02X\n", lr11xx_fw_version.fw, lr11xx_fw_version.type );
     return true;
 }

@@ -265,7 +265,7 @@ void smtc_lora_cad_bt_listen_channel( smtc_lora_cad_bt_t* cad_obj, uint32_t freq
     if( cad_obj->nb_bo > 0 )
     {
         listen_duration_ms += ( cad_obj->nb_bo * ( ( 1 << NB_CAD_SYMBOLS_IN_BO ) * symbol_duration_us ) ) / 1000;
-        listen_duration_ms += cad_obj->nb_bo * smtc_modem_hal_get_radio_tcxo_startup_delay_ms( );
+        listen_duration_ms += cad_obj->nb_bo * smtc_modem_hal_get_radio_tcxo_startup_delay_ms( cad_obj->rp->stack_id);
     }
 
     lora_cad_param.ral_lora_cad_params.cad_det_min_in_symb = 10;
@@ -312,7 +312,7 @@ void smtc_lora_cad_bt_listen_channel( smtc_lora_cad_bt_t* cad_obj, uint32_t freq
     rp_task.duration_time_ms           = listen_duration_ms + tx_duration_ms;
     rp_task.launch_task_callbacks      = smtc_cad_bt_launch_radio_callback_for_rp;
     rp_task.schedule_task_low_priority = false;
-    rp_task.start_time_ms = target_time_ms - listen_duration_ms - smtc_modem_hal_get_radio_tcxo_startup_delay_ms( );
+    rp_task.start_time_ms = target_time_ms - listen_duration_ms - smtc_modem_hal_get_radio_tcxo_startup_delay_ms( cad_obj->rp->stack_id );
     if( is_at_time == true )
     {
         rp_task.state = RP_TASK_STATE_SCHEDULE;

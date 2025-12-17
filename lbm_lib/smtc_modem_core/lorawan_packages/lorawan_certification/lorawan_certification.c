@@ -63,7 +63,7 @@
  * -----------------------------------------------------------------------------
  * --- PRIVATE MACROS-----------------------------------------------------------
  */
-#define NUMBER_OF_CERTIF_OBJ 1
+#define NUMBER_OF_CERTIF_OBJ NUMBER_OF_STACKS
 
 /*!
  * \brief Returns the minimum value between a and b
@@ -585,8 +585,9 @@ static lorawan_certification_requested_tx_type_t lorawan_certification_parser(
         if( rx_buffer_length == LORAWAN_CERTIFICATION_DUT_JOIN_REQ_SIZE )
         {
             // leave network
-            lorawan_api_join_status_clear( lorawan_certification_obj->stack_id );
-            lorawan_api_set_activation_mode( ACTIVATION_MODE_OTAA, lorawan_certification_obj->stack_id );
+	    // EvaTODO: I assumed there was an error in the original code where 'lorawan_certification' was used instead of 'lorawan_certification_obj' - see changes with latest release.
+            lorawan_api_join_status_clear( lorawan_certification->stack_id );
+            lorawan_api_set_activation_mode( ACTIVATION_MODE_OTAA, lorawan_certification->stack_id );
             ret = LORAWAN_CERTIFICATION_JOIN_REQ;
         }
         else
@@ -622,12 +623,12 @@ static lorawan_certification_requested_tx_type_t lorawan_certification_parser(
             {
                 uint8_t adr_custom_data[16] = { 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
                                                 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03 };
-                smtc_modem_adr_set_profile( lorawan_certification_obj->stack_id, SMTC_MODEM_ADR_PROFILE_CUSTOM,
+                smtc_modem_adr_set_profile( lorawan_certification->stack_id, SMTC_MODEM_ADR_PROFILE_CUSTOM,
                                             adr_custom_data );
             }
             else
             {
-                lorawan_api_dr_strategy_set( STATIC_ADR_MODE, lorawan_certification_obj->stack_id );
+                lorawan_api_dr_strategy_set( STATIC_ADR_MODE, lorawan_certification->stack_id );
             }
         }
         else
@@ -642,11 +643,11 @@ static lorawan_certification_requested_tx_type_t lorawan_certification_parser(
         {
             if( rx_buffer[1] == ( uint8_t ) LORAWAN_CERTIFICATION_DUTY_CYCLE_OFF )
             {
-                smtc_duty_cycle_enable_set( SMTC_DTC_FULL_DISABLED );
+                smtc_duty_cycle_enable_set(lorawan_certification->stack_id, SMTC_DTC_FULL_DISABLED );
             }
             else
             {
-                smtc_duty_cycle_enable_set( SMTC_DTC_ENABLED );
+                smtc_duty_cycle_enable_set(lorawan_certification->stack_id, SMTC_DTC_ENABLED );
             }
         }
         else
@@ -853,7 +854,7 @@ static lorawan_certification_requested_tx_type_t lorawan_certification_parser(
         {
             if( rx_buffer[1] == ( uint8_t ) LORAWAN_CERTIFICATION_RELAY_TX_OFF )
             {
-                smtc_modem_relay_tx_disable( lorawan_certification_obj->stack_id );
+                smtc_modem_relay_tx_disable( lorawan_certification->stack_id );
             }
             else
             {
@@ -864,7 +865,7 @@ static lorawan_certification_requested_tx_type_t lorawan_certification_parser(
                 user_relay_config.smart_level                                     = 5;
                 user_relay_config.backoff                                         = 4;
 
-                smtc_modem_relay_tx_enable( lorawan_certification_obj->stack_id, &user_relay_config );
+                smtc_modem_relay_tx_enable( lorawan_certification->stack_id, &user_relay_config );
             }
         }
         else
@@ -899,7 +900,7 @@ static lorawan_certification_requested_tx_type_t lorawan_certification_parser(
             lorawan_certification->cw_tx_power = rx_buffer[6];
 
             // Leave network
-            lorawan_api_join_status_clear( lorawan_certification_obj->stack_id );
+            lorawan_api_join_status_clear( lorawan_certification->stack_id );
 
             // Start Test mode + tx continuous wave
             smtc_modem_test_start( );

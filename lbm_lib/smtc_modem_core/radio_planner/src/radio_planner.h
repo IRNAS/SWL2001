@@ -98,6 +98,7 @@ typedef struct radio_planner_s
     const ralf_t*          radio;
     const ralf_t*          radio_target_attached_to_this_hook[RP_NB_HOOKS];
     uint32_t               margin_delay;
+    uint8_t                stack_id;
 } radio_planner_t;
 
 /*
@@ -120,7 +121,7 @@ void rp_callback( radio_planner_t* rp );
 /*!
  *
  */
-void rp_init( radio_planner_t* rp, const ralf_t* radio );
+void rp_init( uint8_t stack_id, radio_planner_t* rp, const ralf_t* radio );
 
 /*!
  *
