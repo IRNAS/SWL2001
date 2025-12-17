@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 * Add user access to the beacon statistics data with `smtc_modem_class_b_beacon_get_statistics` function.
 * Add user access to the `smtc_modem_factory_reset` function.
 * Add multi-radio support. NOTE: not fully tested. Samples are not updated or tested.
+* Add external front-end module support for SX128X.
 
 ## [v4.9.0] 2025-10-15
 
