@@ -78,7 +78,7 @@
  *
  */
 
-#define NUMBER_OF_REMOTE_MULTICAST_SETUP_PACKAGE_OBJ 1
+#define NUMBER_OF_REMOTE_MULTICAST_SETUP_PACKAGE_OBJ NUMBER_OF_STACKS
 /**
  * @brief Compute current LoRaWAN Stack from the supervisor task_id
  *

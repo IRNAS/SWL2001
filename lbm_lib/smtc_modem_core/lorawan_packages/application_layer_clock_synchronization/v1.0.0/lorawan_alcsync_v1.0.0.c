@@ -75,7 +75,7 @@
  * @brief Number of object
  *
  */
-#define NUMBER_OF_ALCSYNC_OBJ 1
+#define NUMBER_OF_ALCSYNC_OBJ NUMBER_OF_STACKS
 
 /**
  * @brief Compute current LoRaWAN Stack from the supervisor task_id

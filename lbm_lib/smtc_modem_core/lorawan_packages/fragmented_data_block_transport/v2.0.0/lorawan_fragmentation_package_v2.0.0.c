@@ -75,7 +75,7 @@
  *
  */
 
-#define NUMBER_OF_FRAGMENTED_PACKAGE_OBJ 1
+#define NUMBER_OF_FRAGMENTED_PACKAGE_OBJ NUMBER_OF_STACKS
 
 /**
  * @brief Compute current LoRaWAN Stack from the supervisor task_id
@@ -337,6 +337,8 @@ void lorawan_fragmentation_package_service_on_update( void* service_id )
     }
 }
 
+static int prv_count = 0;
+
 uint8_t lorawan_fragmentation_package_service_downlink_handler( lr1_stack_mac_down_data_t* rx_down_data )
 {
     uint8_t stack_id = rx_down_data->stack_id;
@@ -363,12 +365,13 @@ uint8_t lorawan_fragmentation_package_service_downlink_handler( lr1_stack_mac_do
     if( ( rx_down_data->rx_metadata.rx_fport_present == true ) &&
         ( rx_down_data->rx_metadata.rx_fport == FRAGMENTATION_PORT ) && ( rx_down_data->rx_payload_size > 0 ) )
     {
-        SMTC_MODEM_HAL_TRACE_PRINTF( "lorawan_fragmentation_package_service_downlink_handler receive data on port %d\n",
-                                     FRAGMENTATION_PORT );
+        SMTC_MODEM_HAL_TRACE_PRINTF( "lorawan_fragmentation_package_service_downlink_handler receive data on port %d, counter: %d\n",
+                                     FRAGMENTATION_PORT, prv_count++ );
         frag_status_t frag_status =
             fragmentation_package_parser( ctx, rx_down_data->rx_payload, rx_down_data->rx_payload_size,
                                           rx_down_data->rx_metadata.rx_window, stack_id );
         // check if answer have to been transmit
+	SMTC_MODEM_HAL_TRACE_PRINTF( "frag_status %d, fragmentation_tx_payload_ans_size %d\n", frag_status, ctx->fragmentation_tx_payload_ans_size );
         if( ( frag_status == FRAG_STATUS_OK ) && ( ctx->fragmentation_tx_payload_ans_size > 0 ) )
         {
             lorawan_fragmentation_add_task( service_id );
@@ -953,6 +956,7 @@ static frag_status_t fragmentation_package_parser( lorawan_fragmentation_package
 
 static int8_t frag_decoder_write( uint32_t addr, uint8_t* data, uint32_t size )
 {
+    SMTC_MODEM_HAL_TRACE_PRINTF( "frag_decoder_write addr=%lu size=%lu\n", addr, size );
     smtc_modem_hal_context_store( CONTEXT_FUOTA, addr, data, size );
     return 0;
 }

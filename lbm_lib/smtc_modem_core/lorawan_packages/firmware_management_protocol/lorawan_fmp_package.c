@@ -75,7 +75,7 @@
  * @brief Number of FRAGMENTED_PACKAGE object
  *
  */
-#define NUMBER_OF_FMP_PACKAGE_OBJ 1
+#define NUMBER_OF_FMP_PACKAGE_OBJ NUMBER_OF_STACKS
 
 /**
  * @brief Compute current LoRaWAN Stack from the supervisor task_id
