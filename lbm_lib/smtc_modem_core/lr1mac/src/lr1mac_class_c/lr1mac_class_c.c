@@ -375,8 +375,8 @@ void lr1mac_class_c_mac_rp_callback( lr1mac_class_c_t* class_c_obj )
             class_c_obj->rp->radio_params[from_hook_id].rx.lora_pkt_status.snr_pkt_in_db,
             class_c_obj->rp->radio_params[from_hook_id].rx.lora_pkt_status.rssi_pkt_in_dbm );
 
-        SMTC_MODEM_HAL_TRACE_ARRAY_DEBUG( "RxC Payload", class_c_obj->lr1_mac->rx_down_data.rx_payload,
-                                          class_c_obj->lr1_mac->rx_down_data.rx_payload_size );
+        // SMTC_MODEM_HAL_TRACE_ARRAY_DEBUG( "RxC Payload", class_c_obj->lr1_mac->rx_down_data.rx_payload,
+        //                                   class_c_obj->lr1_mac->rx_down_data.rx_payload_size );
 
         status = lr1mac_class_c_mac_downlink_check_under_it( class_c_obj );
 
@@ -396,9 +396,13 @@ void lr1mac_class_c_mac_rp_callback( lr1mac_class_c_t* class_c_obj )
                 class_c_obj->lr1_mac->rx_down_data.rx_metadata.rx_window =
                     RECEIVE_ON_RXC + ( uint8_t ) class_c_obj->rx_session_index;
 
-                class_c_obj->push_callback( class_c_obj->push_context );
+                SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG( "Push RxC to stack id %d\n", class_c_obj->lr1_mac->rx_down_data.stack_id );
+		class_c_obj->push_callback( class_c_obj->push_context );
+		SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG( "Push RxC done\n" );
             }
-        }
+        } else {
+	    SMTC_MODEM_HAL_TRACE_PRINTF( "lr1mac RxC receive It CHECK ERROR %d\n", status );
+	}
         class_c_obj->valid_rx_packet = NO_MORE_VALID_RX_PACKET;
 
         break;
@@ -613,7 +617,9 @@ static int lr1mac_class_c_mac_downlink_check_under_it( lr1mac_class_c_t* class_c
 
         if( class_c_obj->rx_session_index >= LR1MAC_NUMBER_OF_RXC_SESSION )
         {
-            status += ERRORLORAWAN;
+            SMTC_MODEM_HAL_TRACE_PRINTF( "BAD DevAddr=0x%x not found in RxC sessions\n", dev_addr_tmp );
+	    SMTC_MODEM_HAL_TRACE_PRINTF( "Session idx: %d, max: %d\n", class_c_obj->rx_session_index, LR1MAC_NUMBER_OF_RXC_SESSION );
+		status += ERRORLORAWAN;
             class_c_obj->rx_session_index = RX_SESSION_COUNT;
             for( rx_session_type_t i = 0; i < LR1MAC_NUMBER_OF_RXC_SESSION; i++ )
             {
@@ -651,14 +657,17 @@ static rx_packet_type_t lr1mac_class_c_mac_rx_frame_decode( lr1mac_class_c_t* cl
 
     if( status != OKLORAWAN )
     {
-        return NO_MORE_VALID_RX_PACKET;
+        SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG( " BAD size = %u for RX Frame \n",
+					class_c_obj->lr1_mac->rx_down_data.rx_payload_size );
+	return NO_MORE_VALID_RX_PACKET;
     }
 
     status +=
         lr1mac_rx_mhdr_extract( class_c_obj->lr1_mac->rx_down_data.rx_payload, &rx_ftype, &rx_major, &tx_ack_bit );
     if( status != OKLORAWAN )
     {
-        return NO_MORE_VALID_RX_PACKET;
+        SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG( " BAD MHDR for RX Frame \n" );
+	return NO_MORE_VALID_RX_PACKET;
     }
 
     if( class_c_obj->rx_session_index != RX_SESSION_UNICAST )
@@ -666,6 +675,7 @@ static rx_packet_type_t lr1mac_class_c_mac_rx_frame_decode( lr1mac_class_c_t* cl
         if( tx_ack_bit == true )
         {
             tx_ack_bit = false;
+            SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG( " BAD tx_ack_bit = true for RX Frame \n" );
             return NO_MORE_VALID_RX_PACKET;
         }
     }
@@ -689,7 +699,8 @@ static rx_packet_type_t lr1mac_class_c_mac_rx_frame_decode( lr1mac_class_c_t* cl
 
     if( status == OKLORAWAN )
     {
-        status = lr1mac_fcnt_dwn_accept( fcnt_dwn_tmp, &fcnt_dwn_stack_tmp );
+        SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG( "lr1mac RxC receive It CHECK ERROR %d\n", status );
+	status = lr1mac_fcnt_dwn_accept( fcnt_dwn_tmp, &fcnt_dwn_stack_tmp );
     }
 
     if( status == OKLORAWAN )
@@ -697,7 +708,8 @@ static rx_packet_type_t lr1mac_class_c_mac_rx_frame_decode( lr1mac_class_c_t* cl
         if( ( fcnt_dwn_stack_tmp < RX_SESSION_PARAM_CURRENT->fcnt_dwn_min ) ||
             ( fcnt_dwn_stack_tmp > RX_SESSION_PARAM_CURRENT->fcnt_dwn_max ) )
         {
-            status = ERRORLORAWAN;
+            SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG( "lr1mac RxC receive It CHECK ERROR %d\n", status );
+	    status = ERRORLORAWAN;
         }
     }
 
@@ -714,7 +726,8 @@ static rx_packet_type_t lr1mac_class_c_mac_rx_frame_decode( lr1mac_class_c_t* cl
                 RX_SESSION_PARAM_CURRENT->nwk_skey, RX_SESSION_PARAM_CURRENT->dev_addr, 1, fcnt_dwn_stack_tmp, mic_in,
                 class_c_obj->lr1_mac->stack_id ) != SMTC_MODEM_CRYPTO_RC_SUCCESS )
         {
-            status = ERRORLORAWAN;
+            SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG( " BAD MIC for RX Frame \n" );
+		status = ERRORLORAWAN;
         }
     }
     if( status == OKLORAWAN )

@@ -74,7 +74,7 @@
  *
  */
 
-#define NUMBER_OF_FRAGMENTED_PACKAGE_OBJ 1
+#define NUMBER_OF_FRAGMENTED_PACKAGE_OBJ NUMBER_OF_STACKS
 
 /**
  * @brief Compute current LoRaWAN Stack from the supervisor task_id

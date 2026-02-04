@@ -244,7 +244,7 @@ task_valid_t modem_supervisor_add_task( smodem_task* task )
         task_manager.modem_task[task_index].task_context      = task->task_context;
         task_manager.modem_task[task_index].task_enabled      = true;
         task_manager.modem_task[task_index].updated_locked    = task->updated_locked;
-	SMTC_MODEM_HAL_TRACE_WARNING( "modem_supervisor_add_task id = %d , stack_id = %d , time_to_execute_s = %lu\n",
+	SMTC_MODEM_HAL_TRACE_INFO_DEBUG( "modem_supervisor_add_task id = %d , stack_id = %d , time_to_execute_s = %lu\n",
 				     task->id, task->stack_id, task->time_to_execute_s );
         return TASK_VALID;
     }
