@@ -519,9 +519,17 @@ void modem_downlink_callback( lr1_stack_mac_down_data_t* rx_down_data )
         metadata.rssi = ( int8_t ) ( rx_down_data->rx_metadata.rx_rssi + 64 );
     }
 
-    for( uint8_t i = 0; i < NUMBER_OF_SERVICES + NUMBER_OF_LORAWAN_MANAGEMENT_TASKS; i++ )
+    /* Go trough all management tasks - not stack dependant */
+    for( uint8_t i = 0; i < NUMBER_OF_LORAWAN_MANAGEMENT_TASKS; i++ )
     {
         downlink_used_by_services += downlink_services_callback[i]( rx_down_data );
+    }
+
+    /* Go trough all services - stack dependant */
+    for( uint8_t i = 0; i < SERVICE_CONFIG_COUNT; i++ )
+    {
+        uint8_t idx = NUMBER_OF_LORAWAN_MANAGEMENT_TASKS + rx_down_data->stack_id * SERVICE_CONFIG_COUNT + i;
+	downlink_used_by_services += downlink_services_callback[idx]( rx_down_data );
     }
 
     if( rx_down_data->rx_metadata.rx_window == RECEIVE_NONE )
