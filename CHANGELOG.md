@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 * Add user access to the `smtc_modem_factory_reset` function.
 * Add multi-radio support. NOTE: not fully tested. Samples are not updated or tested.
 * Add external front-end module support for SX128X.
+* Fix number of services in callback implementation.
+* Fix number of stacks in FUOTA support packages.
 
 ## [v4.9.0] 2025-10-15
 
