@@ -582,6 +582,10 @@ static uint8_t get_beacon_length( uint8_t beacon_sf )
 }
 static rp_task_types_t get_beacon_rp_task_type( smtc_lr1_beacon_t* lr1_beacon_obj )
 {
+#ifdef BEACON_DISABLE_POWER_SAVING
+    SMTC_MODEM_HAL_TRACE_WARNING( "BEACON_DISABLE_POWER_SAVING is activated, the device will listen all the beacon and can't save power. Set rate: %d\n", lr1_beacon_obj->listen_beacon_rate );
+    return RP_TASK_TYPE_RX_LORA;
+#else
     if( ( ( ( lr1_beacon_obj->beacon_statistics.nb_beacon_missed +
               lr1_beacon_obj->beacon_statistics.nb_beacon_received ) %
             ( lr1_beacon_obj->listen_beacon_rate - lr1_beacon_obj->lr1_mac->stack_id ) ) == 0 ) ||
@@ -595,6 +599,7 @@ static rp_task_types_t get_beacon_rp_task_type( smtc_lr1_beacon_t* lr1_beacon_ob
     {
         return RP_TASK_TYPE_NONE;
     }
+#endif // BEACON_DISABLE_POWER_SAVING
 }
 
 static void compute_beacon_metadata( smtc_lr1_beacon_t* lr1_beacon_obj, uint32_t timestamp, uint32_t beacon_epoch_time )
