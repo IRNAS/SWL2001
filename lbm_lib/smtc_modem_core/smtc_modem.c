@@ -1810,6 +1810,16 @@ smtc_modem_return_code_t smtc_modem_get_lorawan_mac_time( uint8_t stack_id, uint
     return SMTC_MODEM_RC_OK;
 }
 
+smtc_modem_return_code_t smtc_modem_convert_rtc_to_gps_epoch_time( uint8_t stack_id, uint32_t rtc_time, uint32_t* gps_time_s, uint32_t* gps_fractional_s )
+{
+    RETURN_BUSY_IF_TEST_MODE( );
+    RETURN_INVALID_IF_NULL( gps_time_s );
+    RETURN_INVALID_IF_NULL( gps_fractional_s );
+
+    lorawan_api_convert_rtc_to_gps_epoch_time( rtc_time, gps_time_s, gps_fractional_s, stack_id );
+    return SMTC_MODEM_RC_OK;
+}
+
 smtc_modem_return_code_t smtc_modem_get_lorawan_link_check_data( uint8_t stack_id, uint8_t* margin, uint8_t* gw_cnt )
 {
     RETURN_BUSY_IF_TEST_MODE( );
