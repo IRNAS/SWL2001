@@ -1875,6 +1875,22 @@ smtc_modem_return_code_t smtc_modem_get_lorawan_mac_time( uint8_t stack_id, uint
                                                           uint32_t* gps_fractional_s );
 
 /**
+ * @brief Convert RTC time to GPS epoch time
+ *
+ * @param[in] stack_id Stack identifier
+ * @param[in] rtc_time RTC time in milliseconds
+ * @param[out] gps_time_s GPS time in seconds
+ * @param[out] gps_fractional_s GPS fractional second
+ * @return Modem return code as defined in @ref smtc_modem_return_code_t
+ * @retval SMTC_MODEM_RC_OK            Command executed without errors
+ * @retval SMTC_MODEM_RC_INVALID       \p gps_time_s or \p gps_fractional_s are NULL
+ * @retval SMTC_MODEM_RC_BUSY          Modem is currently in test mode
+ * @retval SMTC_MODEM_RC_FAIL          Conversion failed
+ */
+smtc_modem_return_code_t smtc_modem_convert_rtc_to_gps_epoch_time( uint8_t stack_id,
+	uint32_t rtc_time, uint32_t* gps_time_s, uint32_t* gps_fractional_s );
+
+/**
  * @brief Get the link check data after a successful link_check request
  *
  * @remark The demodulation margin indicates the link margin in dB of the most recently transmitted LinkCheckReq
