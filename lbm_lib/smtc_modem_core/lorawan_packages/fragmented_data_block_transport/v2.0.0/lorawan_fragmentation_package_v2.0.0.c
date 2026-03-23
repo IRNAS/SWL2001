@@ -337,8 +337,6 @@ void lorawan_fragmentation_package_service_on_update( void* service_id )
     }
 }
 
-static int prv_count = 0;
-
 uint8_t lorawan_fragmentation_package_service_downlink_handler( lr1_stack_mac_down_data_t* rx_down_data )
 {
     uint8_t stack_id = rx_down_data->stack_id;
