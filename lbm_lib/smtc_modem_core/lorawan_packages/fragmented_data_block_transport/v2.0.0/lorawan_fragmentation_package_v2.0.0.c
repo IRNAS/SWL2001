@@ -363,8 +363,6 @@ uint8_t lorawan_fragmentation_package_service_downlink_handler( lr1_stack_mac_do
     if( ( rx_down_data->rx_metadata.rx_fport_present == true ) &&
         ( rx_down_data->rx_metadata.rx_fport == FRAGMENTATION_PORT ) && ( rx_down_data->rx_payload_size > 0 ) )
     {
-        SMTC_MODEM_HAL_TRACE_PRINTF( "lorawan_fragmentation_package_service_downlink_handler receive data on port %d, counter: %d\n",
-                                     FRAGMENTATION_PORT, prv_count++ );
         frag_status_t frag_status =
             fragmentation_package_parser( ctx, rx_down_data->rx_payload, rx_down_data->rx_payload_size,
                                           rx_down_data->rx_metadata.rx_window, stack_id );
