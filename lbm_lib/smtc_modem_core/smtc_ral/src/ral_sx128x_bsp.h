@@ -166,13 +166,6 @@ void ral_sx128x_bsp_set_front_end_tx(const void* context);
 void ral_sx128x_bsp_set_front_end_rx(const void* context);
 
 /**
- * @brief Set bypass for external front end module, if defined.
- *
- * @param[in] context Chip implementation context
- */
-void ral_sx128x_bsp_set_front_end_bypass(const void* context);
-
-/**
  * @brief Set external front end module off, if defined.
  *
  * @param[in] context Chip implementation context
