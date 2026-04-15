@@ -165,6 +165,7 @@ typedef struct smtc_beacon_statistics_s
                                               //!< time based (in ms)
     uint8_t
         four_last_beacon_rx_statistic;  //!< return the numbers of valid received beacon during the 4 last period beacon
+    uint32_t beacon_epoch_time;         //!< the epoch time inside the last valid beacon
 } smtc_beacon_statistics_t;
 
 /**

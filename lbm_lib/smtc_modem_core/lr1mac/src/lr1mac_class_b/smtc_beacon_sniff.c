@@ -313,6 +313,8 @@ smtc_class_b_beacon_t smtc_beacon_sniff_start( smtc_lr1_beacon_t* lr1_beacon_obj
                                                &fractional_second );
     // store the target gps epoch time (format gps epoch time) to lr1_beacon_obj->beacon_epoch_time
     lr1_beacon_obj->beacon_epoch_time = seconds_since_epoch;
+    // Copy to info beacon for debug and callback
+    lr1_beacon_obj->beacon_statistics.beacon_epoch_time = seconds_since_epoch;
     SMTC_MODEM_HAL_TRACE_PRINTF( "seconds_since_epoch %u, fractional_second %u ms\n", seconds_since_epoch,
                                  fractional_second );
     // launch beacon radio sniff
@@ -428,6 +430,7 @@ void smtc_beacon_sniff_rp_callback( smtc_lr1_beacon_t* lr1_beacon_obj )
         lr1_beacon_obj->is_valid_beacon = is_valid_beacon( lr1_beacon_obj, timestamp );
         lr1_beacon_obj->beacon_buffer_length =
             ( uint8_t ) lr1_beacon_obj->rp->rx_payload_size[lr1_beacon_obj->beacon_sniff_id_rp];
+	SMTC_MODEM_HAL_TRACE_PRINTF( " beacon_epoch_time = %u ms\n", beacon_epoch_time );
     }
 
     update_beacon_pll( lr1_beacon_obj, timestamp );
@@ -642,6 +645,7 @@ static void compute_beacon_metadata( smtc_lr1_beacon_t* lr1_beacon_obj, uint32_t
         lr1_beacon_obj->beacon_statistics.last_beacon_lost_consecutively = 0;
         lr1_beacon_obj->beacon_statistics.four_last_beacon_rx_statistic =
             MIN( lr1_beacon_obj->beacon_statistics.four_last_beacon_rx_statistic + 1, 4 );
+	lr1_beacon_obj->beacon_statistics.beacon_epoch_time = beacon_epoch_time;
     }
     else
     {
@@ -792,7 +796,7 @@ static bool is_valid_beacon( smtc_lr1_beacon_t* lr1_beacon_obj, uint32_t timesta
     if( status == true )
     {
         int32_t check_time = ( beacon_epoch_time - seconds_since_epoch ) * 1000 - fractional_second;
-        SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG( " beacon_time - network time = %u ms\n", check_time );
+        SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG( " beacon_time: %d - network time: %d fractional s: %d = %d ms\n", beacon_epoch_time, seconds_since_epoch, fractional_second, check_time );
         if( ( uint32_t ) ABS( check_time ) < MAX_BEACON_WINDOW_MS )
         {
             return true;
