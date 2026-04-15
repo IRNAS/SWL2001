@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 * Fix number of stacks in FUOTA support packages.
 * Add class B beacon power setting config.
 * Expose function that converts RTC time to GPS epoch time.
+* Add beacon epoch time to `smtc_modem_beacon_statistics_t` structure.
 
 ## [v4.9.0] 2025-10-15
 

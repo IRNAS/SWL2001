@@ -256,6 +256,7 @@ typedef struct smtc_modem_beacon_statistics_s
     uint32_t nb_beacon_received;              //!< Number of beacons received
     uint32_t nb_beacon_missed;                //!< Number of beacons missed
     uint32_t last_beacon_received_timestamp;      //!< Last beacon received timestamp in ms
+    uint32_t last_beacon_epoch_time;                  //!< the epoch time inside the last valid beacon
 } smtc_modem_beacon_statistics_t;
 
 /**
