@@ -1314,6 +1314,43 @@ smtc_modem_return_code_t smtc_modem_get_adr_ack_limit_delay( uint8_t stack_id, u
 smtc_modem_return_code_t smtc_modem_set_join_start_bank( uint8_t stack_id,
                                                          uint8_t start_bank,
                                                          uint8_t* p_bank_count);
+
+/**
+ * @brief Set the uplink dwell time value
+ *
+ * @param [in] stack_id   Stack identifier
+ * @param [in] dwell_time Determines if uplink dwell time is enabled
+ *
+ * @return Modem return code as defined in @ref smtc_modem_return_code_t
+ * @retval SMTC_MODEM_RC_OK                Command executed without errors
+ * @retval SMTC_MODEM_RC_BUSY              Modem is currently in test mode
+ * @retval SMTC_MODEM_RC_INVALID_STACK_ID  Invalid \p stack_id
+ */
+smtc_modem_return_code_t smtc_modem_set_uplink_dwell_time(
+    uint8_t stack_id, bool dwell_time);
+
+/**
+ * @brief Lock or unlock the uplink dwell time value against network changes.
+ *
+ * @remark When locked, TxParamSetupReq MAC commands received from the network
+ *         attempting to change uplink dwell time are ignored.
+ *
+ * @remark Only applicable to regions supporting TxParamSetupReq.
+ *         Returns SMTC_MODEM_RC_INVALID for other regions.
+ *
+ * @param [in] stack_id Stack identifier
+ * @param [in] locked   true  = lock value, ignore network TxParamSetupReq
+ *                      false = unlock, network can change via TxParamSetupReq
+ *
+ * @return Modem return code as defined in @ref smtc_modem_return_code_t
+ * @retval SMTC_MODEM_RC_OK                Command executed without errors
+ * @retval SMTC_MODEM_RC_INVALID           Region does not support TxParamSetupReq
+ * @retval SMTC_MODEM_RC_BUSY              Modem is currently in test mode
+ * @retval SMTC_MODEM_RC_INVALID_STACK_ID  Invalid \p stack_id
+ */
+smtc_modem_return_code_t smtc_modem_set_uplink_dwell_time_locked(
+    uint8_t stack_id, bool locked );
+
 /*
  * -----------------------------------------------------------------------------
  * ----------- BOARD MANAGEMENT MODEM FUNCTIONS --------------------------------

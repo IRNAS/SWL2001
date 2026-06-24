@@ -115,6 +115,8 @@
 #include "aes.h"
 #endif  // USE_LR11XX_CE && ( ADD_FUOTA == 2 )
 
+#include "smtc_real.h"
+
 /*
  * -----------------------------------------------------------------------------
  * --- PRIVATE MACROS-----------------------------------------------------------
@@ -1440,6 +1442,55 @@ smtc_modem_return_code_t smtc_modem_set_join_start_bank( uint8_t stack_id,
     stack_mac->real->real_ctx.join_start_bank_tx_mask = start_bank;
     smtc_real_init_join_snapshot_bank_tx_mask(stack_mac->real);
 
+    return SMTC_MODEM_RC_OK;
+}
+
+smtc_modem_return_code_t smtc_modem_set_uplink_dwell_time(
+    uint8_t stack_id, bool dwell_time)
+{
+    RETURN_BUSY_IF_TEST_MODE( );
+
+    lr1_stack_mac_t* stack_mac = lorawan_api_stack_mac_get( stack_id );
+    if( stack_mac == NULL )
+    {
+        return SMTC_MODEM_RC_INVALID_STACK_ID;
+    }
+
+    /* Dwell time is only valid for regions that support TxParamSetupReq.
+    Enabling dwell time on unsupported regions (e.g. EU868) causes a
+    errors in SMTC real functions. */
+    if( smtc_real_is_tx_param_setup_req_supported( stack_mac->real ) == false )
+    {
+        SMTC_MODEM_HAL_TRACE_WARNING(
+            "Region does not support TxParamSetupReq, ignoring dwell time set request\n" );
+        return SMTC_MODEM_RC_INVALID;
+    }
+
+    smtc_real_set_uplink_dwell_time( stack_mac->real, dwell_time );
+    return SMTC_MODEM_RC_OK;
+}
+
+smtc_modem_return_code_t smtc_modem_set_uplink_dwell_time_locked(
+    uint8_t stack_id, bool locked)
+{
+    RETURN_BUSY_IF_TEST_MODE( );
+
+    lr1_stack_mac_t* stack_mac = lorawan_api_stack_mac_get( stack_id );
+    if( stack_mac == NULL )
+    {
+        return SMTC_MODEM_RC_INVALID_STACK_ID;
+    }
+
+    /* Unsupported locking network control for regions that don't support
+    receiving TxParamSetupReq anyway. */
+    if( smtc_real_is_tx_param_setup_req_supported( stack_mac->real ) == false )
+    {
+        SMTC_MODEM_HAL_TRACE_WARNING(
+            "Region does not support TxParamSetupReq, ignoring uplink dwell time locked set request\n" );
+        return SMTC_MODEM_RC_INVALID;
+    }
+
+    stack_mac->real->real_ctx.uplink_dwell_time_locked = locked;
     return SMTC_MODEM_RC_OK;
 }
 

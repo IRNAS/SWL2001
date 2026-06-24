@@ -2287,8 +2287,25 @@ static void tx_param_setup_parser( lr1_stack_mac_t* lr1_mac )
 
     lr1_mac->tx_power = ( lr1_mac->tx_power > lr1_mac->max_erp_dbm ) ? lr1_mac->max_erp_dbm : lr1_mac->tx_power;
 
-    smtc_real_set_uplink_dwell_time( lr1_mac->real,
-                                     ( lr1_mac->nwk_payload[lr1_mac->nwk_payload_index + 1] & 0x10 ) >> 4 );
+
+    /* Extract uplink dwell time bits from TxParamSetupReq payload byte */
+    bool network_uplink_dwell   =
+        ( lr1_mac->nwk_payload[lr1_mac->nwk_payload_index + 1] & 0x10 ) >> 4;
+
+    /* Apply uplink dwell time only if dwell time locked is disabled.
+    When enabled, the application has locked the value via
+    smtc_modem_set_uplink_dwell_time_locked and network requests are ignored. */
+    if( !lr1_mac->real->real_ctx.uplink_dwell_time_locked )
+    {
+        smtc_real_set_uplink_dwell_time( lr1_mac->real, network_uplink_dwell);
+    }
+    else
+    {
+        SMTC_MODEM_HAL_TRACE_WARNING(
+            "TxParamSetupReq: uplink_dwell=%d ignored, dwell time locked enabled\n",
+            network_uplink_dwell );
+    }
+
 
     smtc_real_set_downlink_dwell_time( lr1_mac->real,
                                        ( lr1_mac->nwk_payload[lr1_mac->nwk_payload_index + 1] & 0x20 ) >> 5 );

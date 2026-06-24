@@ -99,6 +99,7 @@
 #define uplink_dwell_time_ctx real_ctx.uplink_dwell_time_ctx
 #define downlink_dwell_time_ctx real_ctx.downlink_dwell_time_ctx
 #define join_start_bank_tx_mask real_ctx.join_start_bank_tx_mask
+#define uplink_dwell_time_locked real_ctx.uplink_dwell_time_locked
 
 smtc_real_status_t smtc_real_is_supported_region( smtc_real_region_types_t region_type )
 {
@@ -208,6 +209,7 @@ void smtc_real_init( smtc_real_t* real, smtc_real_region_types_t region_type )
 
     real_ctx.sync_word_ctx = real_const.const_sync_word_public;
     join_start_bank_tx_mask = 0;
+    uplink_dwell_time_locked = false;
 }
 
 void smtc_real_config( smtc_real_t* real )
@@ -287,6 +289,7 @@ void smtc_real_config( smtc_real_t* real )
 
     uplink_dwell_time_ctx   = real_const.const_uplink_dwell_time;
     downlink_dwell_time_ctx = false;
+    uplink_dwell_time_locked = false;
 }
 
 void smtc_real_config_session( smtc_real_t* real )
@@ -2950,6 +2953,7 @@ uint8_t smtc_real_get_ping_slot_datarate( smtc_real_t* real )
 void smtc_real_set_uplink_dwell_time( smtc_real_t* real, bool dwell_time )
 {
     uplink_dwell_time_ctx = dwell_time;
+    SMTC_MODEM_HAL_TRACE_INFO( "Dwell time update = %d\n", dwell_time );
 }
 
 void smtc_real_set_downlink_dwell_time( smtc_real_t* real, bool dwell_time )
