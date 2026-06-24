@@ -164,7 +164,7 @@ void region_us_915_init( smtc_real_t* real )
     memset( &unwrapped_channel_mask[0], 0xFF, BANK_MAX_US915 );
     memset( &snapshot_channel_tx_mask[0], 0xFF, BANK_MAX_US915 );
 
-    snapshot_bank_tx_mask = 0;
+    snapshot_bank_tx_mask = real_ctx.join_start_bank_tx_mask;
 }
 
 void region_us_915_config( smtc_real_t* real )
@@ -450,7 +450,12 @@ void region_us_915_set_channel_mask( smtc_real_t* real )
 void region_us_915_init_join_snapshot_channel_mask( smtc_real_t* real )
 {
     memset( snapshot_channel_tx_mask, 0xFF, BANK_MAX_US915 );
-    snapshot_bank_tx_mask = 0;
+    snapshot_bank_tx_mask = real_ctx.join_start_bank_tx_mask;
+}
+
+void region_us_915_init_join_snapshot_bank_tx_mask( smtc_real_t* real )
+{
+    snapshot_bank_tx_mask = real_ctx.join_start_bank_tx_mask;
 }
 
 void region_us_915_init_after_join_snapshot_channel_mask( smtc_real_t* real, uint8_t tx_data_rate,

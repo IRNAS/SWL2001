@@ -1289,6 +1289,31 @@ smtc_modem_return_code_t smtc_modem_set_adr_ack_limit_delay( uint8_t stack_id, u
 smtc_modem_return_code_t smtc_modem_get_adr_ack_limit_delay( uint8_t stack_id, uint8_t* adr_ack_limit,
                                                              uint8_t* adr_ack_delay );
 
+/**
+ * @brief Set the starting bank for join channel cycling
+ *
+ * @remark Join attempts cycle through banks sequentially,
+ *         picking one random channel per bank on each attempt. This
+ *         setting controls which bank the cycle starts from or join failure
+ *         reset occurs. It also sets number of banks supported for used
+ *         region. Only applicable to regions that use channel banks to
+ *         choose next channel for join request (AU915, US915).
+ *         Returns SMTC_MODEM_RC_INVALID for other regions or invalid bank.
+ *         Default is 0 (LoRaWAN spec default).
+ *
+ * @param [in] stack_id   Stack identifier
+ * @param [in] start_bank Starting bank index
+ * @param [in] p_bank_count Pointer to set value of number of banks supported
+ *
+ * @return Modem return code as defined in @ref smtc_modem_return_code_t
+ * @retval SMTC_MODEM_RC_OK                Command executed without errors
+ * @retval SMTC_MODEM_RC_INVALID           Invalid bank or unsupported region
+ * @retval SMTC_MODEM_RC_BUSY              Modem is currently in test mode
+ * @retval SMTC_MODEM_RC_INVALID_STACK_ID  Invalid \p stack_id
+ */
+smtc_modem_return_code_t smtc_modem_set_join_start_bank( uint8_t stack_id,
+                                                         uint8_t start_bank,
+                                                         uint8_t* p_bank_count);
 /*
  * -----------------------------------------------------------------------------
  * ----------- BOARD MANAGEMENT MODEM FUNCTIONS --------------------------------

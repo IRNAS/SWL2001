@@ -98,6 +98,7 @@
 #define custom_dr_distribution_init_ctx real_ctx.custom_dr_distribution_init_ctx
 #define uplink_dwell_time_ctx real_ctx.uplink_dwell_time_ctx
 #define downlink_dwell_time_ctx real_ctx.downlink_dwell_time_ctx
+#define join_start_bank_tx_mask real_ctx.join_start_bank_tx_mask
 
 smtc_real_status_t smtc_real_is_supported_region( smtc_real_region_types_t region_type )
 {
@@ -206,6 +207,7 @@ void smtc_real_init( smtc_real_t* real, smtc_real_region_types_t region_type )
     }
 
     real_ctx.sync_word_ctx = real_const.const_sync_word_public;
+    join_start_bank_tx_mask = 0;
 }
 
 void smtc_real_config( smtc_real_t* real )
@@ -1011,6 +1013,65 @@ void smtc_real_init_join_snapshot_channel_mask( smtc_real_t* real )
 #if defined( REGION_AU_915 )
     case SMTC_REAL_REGION_AU_915: {
         region_au_915_init_join_snapshot_channel_mask( real );
+        break;
+    }
+#endif
+    default:
+        SMTC_MODEM_HAL_PANIC( );
+        break;
+    }
+}
+
+void smtc_real_init_join_snapshot_bank_tx_mask( smtc_real_t* real )
+{
+    switch( real->region_type )
+    {
+#if defined( REGION_WW2G4 )
+    case SMTC_REAL_REGION_WW2G4:
+#endif
+#if defined( REGION_EU_868 )
+    case SMTC_REAL_REGION_EU_868:
+#endif
+#if defined( REGION_AS_923 )
+    case SMTC_REAL_REGION_AS_923:
+    case SMTC_REAL_REGION_AS_923_GRP2:
+    case SMTC_REAL_REGION_AS_923_GRP3:
+#if defined( RP2_103 )
+    case SMTC_REAL_REGION_AS_923_GRP4:
+#endif
+#endif
+#if defined( REGION_CN_470 )
+    case SMTC_REAL_REGION_CN_470:
+#endif
+#if defined( REGION_CN_470_RP_1_0 )
+    case SMTC_REAL_REGION_CN_470_RP_1_0:
+#endif
+#if defined( REGION_IN_865 )
+    case SMTC_REAL_REGION_IN_865:
+#endif
+#if defined( REGION_KR_920 )
+    case SMTC_REAL_REGION_KR_920:
+#endif
+#if defined( REGION_RU_864 )
+    case SMTC_REAL_REGION_RU_864:
+#endif
+#if defined( REGION_WW2G4 ) || defined( REGION_EU_868 ) || defined( REGION_AS_923 ) || defined( REGION_CN_470 ) || \
+    defined( REGION_CN_470_RP_1_0 ) || defined( REGION_IN_865 ) || defined( REGION_KR_920 ) ||                     \
+    defined( REGION_RU_864 )
+    {
+        // Not used for these regions
+        break;
+    }
+#endif
+#if defined( REGION_US_915 )
+    case SMTC_REAL_REGION_US_915: {
+        region_us_915_init_join_snapshot_bank_tx_mask( real );
+        break;
+    }
+#endif
+#if defined( REGION_AU_915 )
+    case SMTC_REAL_REGION_AU_915: {
+        region_au_915_init_join_snapshot_bank_tx_mask( real );
         break;
     }
 #endif

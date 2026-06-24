@@ -14,6 +14,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 * Add user access to the `smtc_modem_factory_reset` function.
 * Add support for 2.4 Ghz multicast class C session frequency setting.
 
+### Changed
+
+* Starting join bank can be set over SMTC modem API for regions that support this (AU915, US915)
+* Subsequent join attempts cycle through all banks for regions that support this (AU915, US915)
+
 ## [v4.8.0] 2024-12-20
 
 This version is based on feature branch v4.5.0 of the LoRa Basics Modem.

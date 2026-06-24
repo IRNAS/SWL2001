@@ -1404,6 +1404,45 @@ smtc_modem_return_code_t smtc_modem_get_adr_ack_limit_delay( uint8_t stack_id, u
     return SMTC_MODEM_RC_OK;
 }
 
+smtc_modem_return_code_t smtc_modem_set_join_start_bank( uint8_t stack_id,
+                                                         uint8_t start_bank,
+                                                         uint8_t* p_bank_count)
+{
+    RETURN_BUSY_IF_TEST_MODE( );
+
+    lr1_stack_mac_t* stack_mac = lorawan_api_stack_mac_get( stack_id );
+    if( stack_mac == NULL )
+    {
+        return SMTC_MODEM_RC_INVALID_STACK_ID;
+    }
+
+    /* Only regions with channel banks support this setting */
+    if( (stack_mac->real->region_type != SMTC_REAL_REGION_AU_915) &&
+        (stack_mac->real->region_type != SMTC_REAL_REGION_US_915) )
+    {
+        SMTC_MODEM_HAL_TRACE_WARNING(
+            "smtc_modem_set_join_start_bank: region does not support "
+            "channel bank cycling\n" );
+        return SMTC_MODEM_RC_INVALID;
+    }
+
+    /* Validate bank index against region's bank count */
+    if( start_bank >= stack_mac->real->real_const.const_number_of_channel_bank )
+    {
+        SMTC_MODEM_HAL_TRACE_WARNING(
+            "smtc_modem_set_join_start_bank: invalid bank %d for region, "
+            "max is %d\n", start_bank,
+            stack_mac->real->real_const.const_number_of_channel_bank - 1);
+        return SMTC_MODEM_RC_INVALID;
+    }
+
+    *p_bank_count = stack_mac->real->real_const.const_number_of_channel_bank;
+    stack_mac->real->real_ctx.join_start_bank_tx_mask = start_bank;
+    smtc_real_init_join_snapshot_bank_tx_mask(stack_mac->real);
+
+    return SMTC_MODEM_RC_OK;
+}
+
 /*
  * -----------------------------------------------------------------------------
  * ----------- BOARD MANAGEMENT MODEM FUNCTIONS --------------------------------
