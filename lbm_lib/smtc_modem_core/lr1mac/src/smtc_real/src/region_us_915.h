@@ -128,6 +128,13 @@ void region_us_915_init_join_snapshot_channel_mask( smtc_real_t* real );
  * \param [IN]  none
  * \param [OUT] return
  */
+void region_us_915_init_join_snapshot_bank_tx_mask( smtc_real_t* real );
+/**
+ * \brief
+ * \remark
+ * \param [IN]  none
+ * \param [OUT] return
+ */
 void region_us_915_init_after_join_snapshot_channel_mask( smtc_real_t* real, uint8_t tx_data_rate,
                                                           uint32_t tx_frequency );
 /**

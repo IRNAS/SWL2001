@@ -236,6 +236,7 @@ typedef struct smtc_real_ctx_s
     uint8_t   sync_word_ctx;
     bool      uplink_dwell_time_ctx;
     bool      downlink_dwell_time_ctx;
+    uint8_t   join_start_bank_tx_mask;
 } smtc_real_ctx_t;
 
 typedef struct smtc_real_const_s
