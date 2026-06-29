@@ -542,6 +542,9 @@ void lr1mac_core_join_status_clear( lr1_stack_mac_t* lr1_mac_obj )
 
     // Revert ADR modem in case the leave network command is called before join success
     lr1_mac_obj->adr_mode_select = lr1_mac_obj->adr_mode_select_tmp;
+
+    // Persist NOT_JOINED session state so it is not restored after reset
+    lr1mac_core_context_save( lr1_mac_obj );
 }
 
 void lr1mac_core_join_session_restore( lr1_stack_mac_t* lr1_mac_obj )
