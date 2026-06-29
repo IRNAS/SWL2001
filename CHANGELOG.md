@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 * Fixed session channel mask restoration by restoring the LoRaWAN session after region initialization.
+* Save session not joined state to NVM after leaving network.
 
 ## [v4.8.0] 2024-12-20
 
