@@ -65,6 +65,7 @@ typedef enum tx_protocol_manager_tx_type
     TX_PROTOCOL_TRANSMIT_LORA_AT_TIME       = 0x04,
     TX_PROTOCOL_TRANSMIT_TEST_MODE          = 0x05,
     TX_PROTOCOL_TRANSMIT_LORA_CERTIFICATION = 0x06,
+    TX_PROTOCOL_TRANSMIT_LORA_NO_DELAY      = 0x07,  //!< Normal LoRaWAN, without the random delay before it
 } tx_protocol_manager_tx_type_t;
 /*
  * -----------------------------------------------------------------------------

@@ -71,9 +71,10 @@ extern "C" {
  * @brief add generic task send
  *
  * @param stack_id
+ * @param random_delay false to start the first transmission without the tx protocol manager's random delay
  */
 void lorawan_send_add_task( uint8_t stack_id, uint8_t f_port, bool send_fport, bool confirmed, const uint8_t* payload,
-                            uint8_t payload_length, bool emergency, uint32_t delay_s );
+                            uint8_t payload_length, bool emergency, bool random_delay, uint32_t delay_s );
 
 /**
  * @brief Remove a task send

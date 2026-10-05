@@ -91,6 +91,7 @@ typedef struct lorawan_send_management_s
     uint8_t fport;
     bool    fport_present;
     bool    packet_type;
+    bool    random_delay;
 
 } lorawan_send_management_t;
 
@@ -143,7 +144,7 @@ void lorawan_send_management_services_init( uint8_t* service_id, uint8_t task_id
 }
 
 void lorawan_send_add_task( uint8_t stack_id, uint8_t f_port, bool send_fport, bool confirmed, const uint8_t* payload,
-                            uint8_t payload_length, bool emergency, uint32_t delay_s )
+                            uint8_t payload_length, bool emergency, bool random_delay, uint32_t delay_s )
 
 {
     IS_VALID_STACK_ID( stack_id );
@@ -170,6 +171,7 @@ void lorawan_send_add_task( uint8_t stack_id, uint8_t f_port, bool send_fport, b
     lorawan_send_management_obj[stack_id].fport         = f_port;
     lorawan_send_management_obj[stack_id].fport_present = send_fport;
     lorawan_send_management_obj[stack_id].packet_type   = confirmed;
+    lorawan_send_management_obj[stack_id].random_delay  = random_delay;
 
     task_send.time_to_execute_s = smtc_modem_hal_get_time_in_s( ) + delay_s;
     task_send.stack_id          = stack_id;
@@ -196,7 +198,9 @@ static void lorawan_send_management_service_on_launch( void* context )
     lorawan_send_management_obj[STACK_ID_CURRENT_TASK].rx_ack_bit_context = 0;
 
     send_status = tx_protocol_manager_request(
-        TX_PROTOCOL_TRANSMIT_LORA, lorawan_send_management_obj[STACK_ID_CURRENT_TASK].fport,
+        ( lorawan_send_management_obj[STACK_ID_CURRENT_TASK].random_delay == true ) ? TX_PROTOCOL_TRANSMIT_LORA
+                                                                                    : TX_PROTOCOL_TRANSMIT_LORA_NO_DELAY,
+        lorawan_send_management_obj[STACK_ID_CURRENT_TASK].fport,
         lorawan_send_management_obj[STACK_ID_CURRENT_TASK].fport_present,
         lorawan_send_management_obj[STACK_ID_CURRENT_TASK].payload,
         lorawan_send_management_obj[STACK_ID_CURRENT_TASK].payload_length,

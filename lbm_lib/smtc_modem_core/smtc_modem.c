@@ -223,7 +223,8 @@ struct
  */
 
 static smtc_modem_return_code_t smtc_modem_send_tx( uint8_t stack_id, uint8_t f_port, bool confirmed,
-                                                    const uint8_t* payload, uint8_t payload_length, bool emergency );
+                                                    const uint8_t* payload, uint8_t payload_length, bool emergency,
+                                                    bool random_delay );
 
 static smtc_modem_return_code_t smtc_modem_custom_dr_distribution_to_tab(
     uint16_t mask_dr_allowed, const uint8_t adr_custom_data[SMTC_MODEM_CUSTOM_ADR_DATA_LENGTH],
@@ -873,7 +874,18 @@ smtc_modem_return_code_t smtc_modem_request_uplink( uint8_t stack_id, uint8_t f_
     RETURN_INVALID_IF_NULL( payload );
 
     smtc_modem_return_code_t return_code = SMTC_MODEM_RC_OK;
-    return_code = smtc_modem_send_tx( stack_id, f_port, confirmed, payload, payload_length, false );
+    return_code = smtc_modem_send_tx( stack_id, f_port, confirmed, payload, payload_length, false, true );
+    return return_code;
+}
+
+smtc_modem_return_code_t smtc_modem_request_uplink_without_delay( uint8_t stack_id, uint8_t f_port, bool confirmed,
+                                                                  const uint8_t* payload, uint8_t payload_length )
+{
+    RETURN_BUSY_IF_TEST_MODE( );
+    RETURN_INVALID_IF_NULL( payload );
+
+    smtc_modem_return_code_t return_code = SMTC_MODEM_RC_OK;
+    return_code = smtc_modem_send_tx( stack_id, f_port, confirmed, payload, payload_length, false, false );
     return return_code;
 }
 
@@ -1150,7 +1162,7 @@ smtc_modem_return_code_t smtc_modem_request_emergency_uplink( uint8_t stack_id, 
     RETURN_INVALID_IF_NULL( payload );
 
     smtc_modem_return_code_t return_code = SMTC_MODEM_RC_OK;
-    return_code = smtc_modem_send_tx( stack_id, fport, confirmed, payload, payload_length, true );
+    return_code = smtc_modem_send_tx( stack_id, fport, confirmed, payload, payload_length, true, true );
     return return_code;
 }
 
@@ -1183,7 +1195,7 @@ smtc_modem_return_code_t smtc_modem_request_empty_uplink( uint8_t stack_id, bool
     }
     else
     {
-        lorawan_send_add_task( stack_id, fport, send_fport, confirmed, NULL, 0, false, 0 );
+        lorawan_send_add_task( stack_id, fport, send_fport, confirmed, NULL, 0, false, true, 0 );
     }
     return return_code;
 }
@@ -3025,7 +3037,8 @@ smtc_modem_return_code_t smtc_modem_store_and_forward_flash_get_number_of_free_s
  */
 
 static smtc_modem_return_code_t smtc_modem_send_tx( uint8_t stack_id, uint8_t f_port, bool confirmed,
-                                                    const uint8_t* payload, uint8_t payload_length, bool emergency )
+                                                    const uint8_t* payload, uint8_t payload_length, bool emergency,
+                                                    bool random_delay )
 {
     smtc_modem_return_code_t return_code = SMTC_MODEM_RC_OK;
     smtc_modem_status_mask_t status_mask = modem_get_status( stack_id );
@@ -3054,7 +3067,8 @@ static smtc_modem_return_code_t smtc_modem_send_tx( uint8_t stack_id, uint8_t f_
     else
     {
         SMTC_MODEM_HAL_TRACE_INFO( "add send task\n" );
-        lorawan_send_add_task( stack_id, f_port, true, confirmed, payload, payload_length, emergency, 0 );
+        lorawan_send_add_task( stack_id, f_port, true, confirmed, payload, payload_length, emergency, random_delay,
+                               0 );
     }
 
     //@todo indicate that can't accept a new task because task already enqueued     //   SetModemBusy ();

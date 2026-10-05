@@ -114,13 +114,17 @@ typedef enum tx_protocol_manager_state
 #define MODEM_MAX_RANDOM_DELAY_MS 6000u
 #endif
 
+// A frame requested without the random delay waits as long as a certification frame
+#define IS_FIXED_DELAY_REQUEST( type ) \
+    ( ( ( type ) == TX_PROTOCOL_TRANSMIT_LORA_CERTIFICATION ) || ( ( type ) == TX_PROTOCOL_TRANSMIT_LORA_NO_DELAY ) )
+
 #if defined( ADD_RELAY_TX )
 #define MODEM_TASK_DELAY_MS                                                \
     ( ( ( request_type == TX_PROTOCOL_TRANSMIT_TEST_MODE ) ||              \
-        ( ( request_type == TX_PROTOCOL_TRANSMIT_LORA_CERTIFICATION ) &&   \
+        ( IS_FIXED_DELAY_REQUEST( request_type ) &&                        \
           ( smtc_relay_tx_is_enable( current_tpm_stack_id ) == false ) ) ) \
           ? 0                                                              \
-      : ( ( request_type == TX_PROTOCOL_TRANSMIT_LORA_CERTIFICATION ) &&   \
+      : ( IS_FIXED_DELAY_REQUEST( request_type ) &&                        \
           ( smtc_relay_tx_is_enable( current_tpm_stack_id ) == true ) )    \
           ? 2000                                                           \
           : ( smtc_modem_hal_get_random_nb_in_range( MODEM_MIN_RANDOM_DELAY_MS, MODEM_MAX_RANDOM_DELAY_MS ) ) )
@@ -128,7 +132,7 @@ typedef enum tx_protocol_manager_state
 
 #define MODEM_TASK_DELAY_MS                                           \
     ( ( ( request_type == TX_PROTOCOL_TRANSMIT_TEST_MODE ) ||         \
-        ( request_type == TX_PROTOCOL_TRANSMIT_LORA_CERTIFICATION ) ) \
+        IS_FIXED_DELAY_REQUEST( request_type ) )                      \
           ? 0                                                         \
           : ( smtc_modem_hal_get_random_nb_in_range( MODEM_MIN_RANDOM_DELAY_MS, MODEM_MAX_RANDOM_DELAY_MS ) ) )
 #endif
@@ -615,6 +619,7 @@ static status_lorawan_t manage_tx_lora_state( void )
         break;
     case TX_PROTOCOL_TRANSMIT_LORA:
     case TX_PROTOCOL_TRANSMIT_LORA_CERTIFICATION:
+    case TX_PROTOCOL_TRANSMIT_LORA_NO_DELAY:
 
         status = lorawan_api_payload_send( current_tpm_fport, current_tpm_fport_enabled, current_tpm_data,
                                            current_tpm_data_len, current_tpm_packet_type, current_tpm_target_time_ms,

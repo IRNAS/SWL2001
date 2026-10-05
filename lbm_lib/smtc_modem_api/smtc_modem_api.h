@@ -628,6 +628,32 @@ smtc_modem_return_code_t smtc_modem_request_uplink( uint8_t stack_id, uint8_t fp
                                                     const uint8_t* payload, uint8_t payload_length );
 
 /**
+ * @brief Request a LoRaWAN uplink without the random delay before its first transmission
+ *
+ * @remark Same as @ref smtc_modem_request_uplink, except that the first transmission is not held back by a random
+ * delay (MODEM_MIN_RANDOM_DELAY_MS to MODEM_MAX_RANDOM_DELAY_MS, 0.5 to 6 s by default). With relay TX enabled it
+ * waits a fixed 2 s instead, as certification frames do. The delay spreads out the uplinks of devices that send at the
+ * same time, so leave it out only when the application keeps the devices apart itself, for example with a transmit
+ * slot per device. Uplinks the modem sends on its own and NbTrans repetitions keep their random delays.
+ * @remark LoRaWAN NbTrans parameter can be set in mobile and custom ADR modes with @ref smtc_modem_set_nb_trans
+ *
+ * @param [in] stack_id       Stack identifier
+ * @param [in] fport          LoRaWAN FPort on which the uplink is done
+ * @param [in] confirmed      Message type (true: confirmed, false: unconfirmed)
+ * @param [in] payload        Data to be sent
+ * @param [in] payload_length Number of bytes from payload to be sent
+ *
+ * @return Modem return code as defined in @ref smtc_modem_return_code_t
+ * @retval SMTC_MODEM_RC_OK                Command executed without errors
+ * @retval SMTC_MODEM_RC_INVALID           \p fport is out of the [1:223] range or equal to the DM LoRaWAN FPort
+ * @retval SMTC_MODEM_RC_BUSY              Modem is currently in test mode
+ * @retval SMTC_MODEM_RC_FAIL              Modem is not available (suspended, muted, or not joined)
+ * @retval SMTC_MODEM_RC_INVALID_STACK_ID  Invalid \p stack_id
+ */
+smtc_modem_return_code_t smtc_modem_request_uplink_without_delay( uint8_t stack_id, uint8_t fport, bool confirmed,
+                                                                  const uint8_t* payload, uint8_t payload_length );
+
+/**
  * @brief Get the modem event
  *
  * @remark This command can be used to retrieve pending events from the modem.
