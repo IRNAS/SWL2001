@@ -127,6 +127,14 @@ smtc_real_region_types_t lorawan_api_get_region( uint8_t stack_id );
 status_lorawan_t lorawan_api_set_region( smtc_real_region_types_t region_type, uint8_t stack_id );
 
 /**
+ * @brief Limit the uplink channels to one sub-band of the current region
+ *
+ * @param [in] sub_band Sub-band from 1 to 8, or 0 for all channels
+ * @return status_lorawan_t ERRORLORAWAN if the region has no sub-bands or \p sub_band is out of range
+ */
+status_lorawan_t lorawan_api_set_sub_band( uint8_t sub_band, uint8_t stack_id );
+
+/**
  * @brief  Sends an uplink as soon as possible at a chosen time
  *
  * @param [in] fport          Uplink port

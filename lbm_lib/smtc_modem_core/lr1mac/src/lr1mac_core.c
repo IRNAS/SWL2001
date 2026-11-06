@@ -974,6 +974,16 @@ status_lorawan_t lr1mac_core_set_region( lr1_stack_mac_t* lr1_mac_obj, smtc_real
     return ERRORLORAWAN;
 }
 
+status_lorawan_t lr1mac_core_set_sub_band( lr1_stack_mac_t* lr1_mac_obj, uint8_t sub_band )
+{
+    if( smtc_real_set_sub_band( lr1_mac_obj->real, sub_band ) != OKLORAWAN )
+    {
+        return ERRORLORAWAN;
+    }
+    lr1_stack_mac_region_config( lr1_mac_obj );
+    return OKLORAWAN;
+}
+
 void lr1mac_core_set_no_rx_packet_threshold( lr1_stack_mac_t* lr1_mac_obj, uint16_t no_rx_packet_reset_threshold )
 {
     lr1_mac_obj->no_rx_packet_reset_threshold = no_rx_packet_reset_threshold;

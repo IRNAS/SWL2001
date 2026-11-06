@@ -185,6 +185,12 @@ status_lorawan_t lorawan_api_set_region( smtc_real_region_types_t region_type, u
     return ret;
 }
 
+status_lorawan_t lorawan_api_set_sub_band( uint8_t sub_band, uint8_t stack_id )
+{
+    PANIC_IF_STACK_ID_TOO_HIGH( stack_id );
+    return lr1mac_core_set_sub_band( &lr1_mac_obj[stack_id], sub_band );
+}
+
 status_lorawan_t lorawan_api_payload_send( uint8_t fport, bool fport_enabled, const uint8_t* data, uint8_t data_len,
                                            lr1mac_layer_param_t packet_type, uint32_t target_time_ms, uint8_t stack_id )
 {

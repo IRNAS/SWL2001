@@ -645,6 +645,24 @@ smtc_modem_return_code_t smtc_modem_set_region( uint8_t stack_id, smtc_modem_reg
     return SMTC_MODEM_RC_OK;
 }
 
+smtc_modem_return_code_t smtc_modem_set_sub_band( uint8_t stack_id, uint8_t sub_band )
+{
+    RETURN_BUSY_IF_TEST_MODE( );
+
+    smtc_modem_status_mask_t status_mask = modem_get_status( stack_id );
+    if( ( ( status_mask & SMTC_MODEM_STATUS_JOINED ) == SMTC_MODEM_STATUS_JOINED ) ||
+        ( status_mask & SMTC_MODEM_STATUS_JOINING ) == SMTC_MODEM_STATUS_JOINING )
+    {
+        SMTC_MODEM_HAL_TRACE_ERROR( "%s call but the device is already join\n", __func__ );
+        return SMTC_MODEM_RC_BUSY;
+    }
+    if( lorawan_api_set_sub_band( sub_band, stack_id ) != OKLORAWAN )
+    {
+        return SMTC_MODEM_RC_INVALID;
+    }
+    return SMTC_MODEM_RC_OK;
+}
+
 smtc_modem_return_code_t smtc_modem_set_nb_trans( uint8_t stack_id, uint8_t nb_trans )
 {
     RETURN_BUSY_IF_TEST_MODE( );

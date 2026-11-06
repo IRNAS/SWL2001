@@ -121,6 +121,7 @@ void smtc_real_init( smtc_real_t* real, smtc_real_region_types_t region_type )
         SMTC_MODEM_HAL_PANIC( );
     }
     real->region_type = region_type;
+    real->sub_band    = 0;
 
     // Init all real_const.const_xxx to 0
     memset( &( real_const ), 0, sizeof( smtc_real_const_t ) );
@@ -496,6 +497,19 @@ status_lorawan_t smtc_real_get_next_tx_dr( smtc_real_t* real, join_status_t join
 cf_list_type_t smtc_real_cf_list_type_supported( smtc_real_t* real )
 {
     return ( real_const.const_cf_list_type_supported );
+}
+
+status_lorawan_t smtc_real_set_sub_band( smtc_real_t* real, uint8_t sub_band )
+{
+#if defined( REGION_US_915 )
+    if( ( real->region_type == SMTC_REAL_REGION_US_915 ) && ( sub_band <= BANK_7_125_US915 + 1 ) )
+    {
+        real->sub_band = sub_band;
+        return OKLORAWAN;
+    }
+#endif
+    SMTC_MODEM_HAL_TRACE_ERROR( "Invalid sub-band %u for region 0x%02x\n", sub_band, real->region_type );
+    return ERRORLORAWAN;
 }
 
 status_lorawan_t smtc_real_update_cflist( smtc_real_t* real, uint8_t* cf_list )

@@ -157,6 +157,16 @@ cf_list_type_t smtc_real_cf_list_type_supported( smtc_real_t* real );
 status_lorawan_t smtc_real_update_cflist( smtc_real_t* real, uint8_t* cf_list );
 
 /**
+ * @brief Limit the default uplink channels to one sub-band
+ *
+ * @remark Only US915 has sub-bands. Takes effect at the next region config.
+ * @param [in] real     Region object
+ * @param [in] sub_band Sub-band from 1 to 8, or 0 for all channels
+ * @return status_lorawan_t ERRORLORAWAN if the region is not US915 or \p sub_band is above 8
+ */
+status_lorawan_t smtc_real_set_sub_band( smtc_real_t* real, uint8_t sub_band );
+
+/**
  * \brief
  * \remark
  * \param [IN]  none

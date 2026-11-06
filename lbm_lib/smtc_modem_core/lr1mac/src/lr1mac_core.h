@@ -362,6 +362,15 @@ smtc_real_region_types_t lr1mac_core_get_region( lr1_stack_mac_t* lr1_mac_obj );
 status_lorawan_t lr1mac_core_set_region( lr1_stack_mac_t* lr1_mac_obj, smtc_real_region_types_t region_type );
 
 /**
+ * @brief Limit the uplink channels to one sub-band of the current region and apply it to the channel plan
+ *
+ * @param lr1_mac_obj
+ * @param sub_band Sub-band from 1 to 8, or 0 for all channels
+ * @return status_lorawan_t
+ */
+status_lorawan_t lr1mac_core_set_sub_band( lr1_stack_mac_t* lr1_mac_obj, uint8_t sub_band );
+
+/**
  * @brief Set the number of consecutive uplink packet without downlink to concidere the stack out of range
  *
  * @param lr1_mac_obj

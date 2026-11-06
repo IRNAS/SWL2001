@@ -308,6 +308,7 @@ typedef struct smtc_real_s
     smtc_real_region_types_t region_type;
     smtc_real_const_t        real_const;
     smtc_real_ctx_t          real_ctx;
+    uint8_t                  sub_band;  // US915 sub-band from 1 to 8 the default channels are limited to, 0 for all
 
     union smtc_real_region_u
     {

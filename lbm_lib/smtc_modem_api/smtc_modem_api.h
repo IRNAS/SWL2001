@@ -581,6 +581,26 @@ smtc_modem_return_code_t smtc_modem_get_list_region( uint8_t stack_id, uint8_t* 
 smtc_modem_return_code_t smtc_modem_set_region( uint8_t stack_id, smtc_modem_region_t region );
 
 /**
+ * @brief Limit the US915 uplink channels to one sub-band
+ *
+ * @remark Sub-band N holds the 125 kHz channels 8 * (N - 1) to 8 * (N - 1) + 7 and the 500 kHz channel 64 + (N - 1),
+ * so sub-band 2 is channels 8 to 15 and 65. Join requests then go out only on these channels, and the modem keeps to
+ * them after the join when the network sends no channel mask, and when the ADR backoff re-enables the default
+ * channels. A channel mask the network sends still applies as received.
+ * @remark Call it after @ref smtc_modem_set_region, which clears the sub-band, and before joining.
+ *
+ * @param [in] stack_id  Stack identifier
+ * @param [in] sub_band  Sub-band from 1 to 8, or 0 for all channels
+ *
+ * @return Modem return code as defined in @ref smtc_modem_return_code_t
+ * @retval SMTC_MODEM_RC_OK                Command executed without errors
+ * @retval SMTC_MODEM_RC_INVALID           \p sub_band is above 8, or the region is not US915
+ * @retval SMTC_MODEM_RC_BUSY              Modem is currently in test mode or in joining/joined state
+ * @retval SMTC_MODEM_RC_INVALID_STACK_ID  Invalid \p stack_id
+ */
+smtc_modem_return_code_t smtc_modem_set_sub_band( uint8_t stack_id, uint8_t sub_band );
+
+/**
  * @brief Get the current LoRaWAN region
  *
  * @param [in]  stack_id Stack identifier

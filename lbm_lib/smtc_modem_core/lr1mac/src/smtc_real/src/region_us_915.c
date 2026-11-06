@@ -98,6 +98,14 @@ typedef enum ch_mask_after_join_e
  */
 static void region_us_915_channel_mask_set_after_join( smtc_real_t* real );
 
+/**
+ * @brief Build the default channel mask: all 72 channels, or only the channels of real->sub_band
+ *
+ * @param real
+ * @param [out] mask Channel mask of BANK_MAX_US915 bytes, one byte per bank
+ */
+static void region_us_915_default_channel_mask( smtc_real_t* real, uint8_t* mask );
+
 /*
  * -----------------------------------------------------------------------------
  * --- PUBLIC FUNCTIONS DEFINITION ---------------------------------------------
@@ -170,10 +178,10 @@ void region_us_915_init( smtc_real_t* real )
 void region_us_915_config( smtc_real_t* real )
 {
     // Tx 125 kHz channels
+    region_us_915_default_channel_mask( real, channel_index_enabled );
+
     for( uint8_t i = 0; i < NUMBER_OF_TX_CHANNEL_US_915 - 8; i++ )
     {
-        SMTC_PUT_BIT8( channel_index_enabled, i, CHANNEL_ENABLED );
-
         // Enable default datarate
         dr_bitfield_tx_channel[i] = DEFAULT_TX_DR_125_BIT_FIELD_US_915;
 
@@ -185,7 +193,6 @@ void region_us_915_config( smtc_real_t* real )
     // Tx 500 kHz channels
     for( uint8_t i = NUMBER_OF_TX_CHANNEL_US_915 - 8; i < NUMBER_OF_TX_CHANNEL_US_915; i++ )
     {
-        SMTC_PUT_BIT8( channel_index_enabled, i, CHANNEL_ENABLED );
         // Enable default datarate
         dr_bitfield_tx_channel[i] = DEFAULT_TX_DR_500_BIT_FIELD_US_915;
 
@@ -375,7 +382,7 @@ status_lorawan_t region_us_915_get_next_channel( smtc_real_t* real, uint8_t tx_d
           ( snapshot_channel_tx_mask[BANK_8_500_US915] == 0 ) ) &&
         ( first_ch_mask_received == ch_mask_after_join_56ch ) )
     {
-        memset( unwrapped_channel_mask, 0xFF, real_const.const_number_of_channel_bank );
+        region_us_915_default_channel_mask( real, unwrapped_channel_mask );
         region_us_915_set_channel_mask( real );
     }
 
@@ -460,6 +467,13 @@ void region_us_915_init_after_join_snapshot_channel_mask( smtc_real_t* real, uin
                                                           uint32_t tx_frequency )
 {
     us_915_channels_bank_t ch_mask_block = 0;
+
+    if( real->sub_band != 0 )
+    {
+        region_us_915_default_channel_mask( real, unwrapped_channel_mask );
+        region_us_915_channel_mask_set_after_join( real );
+        return;
+    }
 
     for( us_915_channels_bank_t i = 0; i < BANK_MAX_US915; i++ )
     {
@@ -624,9 +638,12 @@ status_channel_t region_us_915_build_channel_mask( smtc_real_t* real, uint8_t ch
 
 bool region_us_915_are_all_default_channels_enabled( smtc_real_t* real )
 {
-    for( uint8_t i = 0; i < NUMBER_OF_TX_CHANNEL_US_915; i++ )
+    uint8_t default_mask[BANK_MAX_US915];
+    region_us_915_default_channel_mask( real, default_mask );
+
+    for( uint8_t i = 0; i < BANK_MAX_US915; i++ )
     {
-        if( SMTC_GET_BIT8( channel_index_enabled, i ) == 0 )
+        if( ( channel_index_enabled[i] & default_mask[i] ) != default_mask[i] )
         {
             return false;
         }
@@ -634,20 +651,24 @@ bool region_us_915_are_all_default_channels_enabled( smtc_real_t* real )
     return true;
 }
 
-// Enable all default channels (64 + 8)
-// Return true if at least one channel was enabled by this function
+// Enable all default channels (64 + 8, or the 8 + 1 of the sub-band)
 void region_us_915_enable_all_channels_with_valid_freq( smtc_real_t* real )
 {
+    uint8_t default_mask[BANK_MAX_US915];
+    region_us_915_default_channel_mask( real, default_mask );
+
+    for( uint8_t i = 0; i < BANK_MAX_US915; i++ )
+    {
+        channel_index_enabled[i] |= default_mask[i];
+    }
     // Tx 125 kHz channels
     for( uint8_t i = 0; i < NUMBER_OF_TX_CHANNEL_US_915 - 8; i++ )
     {
-        SMTC_PUT_BIT8( channel_index_enabled, i, CHANNEL_ENABLED );
         dr_bitfield_tx_channel[i] = DEFAULT_TX_DR_125_BIT_FIELD_US_915;
     }
     // Tx 500 kHz channels
     for( uint8_t i = NUMBER_OF_TX_CHANNEL_US_915 - 8; i < NUMBER_OF_TX_CHANNEL_US_915; i++ )
     {
-        SMTC_PUT_BIT8( channel_index_enabled, i, CHANNEL_ENABLED );
         dr_bitfield_tx_channel[i] = DEFAULT_TX_DR_500_BIT_FIELD_US_915;
     }
 }
@@ -733,6 +754,19 @@ uint32_t region_us_915_get_rx_ping_slot_frequency_channel( smtc_real_t* real, ui
  * -----------------------------------------------------------------------------
  * --- PRIVATE FUNCTIONS DEFINITION --------------------------------------------
  */
+
+static void region_us_915_default_channel_mask( smtc_real_t* real, uint8_t* mask )
+{
+    if( real->sub_band == 0 )
+    {
+        memset( mask, 0xFF, BANK_MAX_US915 );
+        return;
+    }
+
+    memset( mask, 0x00, BANK_MAX_US915 );
+    mask[real->sub_band - 1] = 0xFF;
+    SMTC_PUT_BIT8( &mask[BANK_8_500_US915], real->sub_band - 1, CHANNEL_ENABLED );
+}
 
 static void region_us_915_channel_mask_set_after_join( smtc_real_t* real )
 {

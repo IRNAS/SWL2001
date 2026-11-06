@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 * Add beacon epoch time to `smtc_modem_beacon_statistics_t` structure.
 * Add `smtc_modem_request_uplink_without_delay` function, which requests an uplink without the random delay before
   its first transmission.
+* Add `smtc_modem_set_sub_band` function, which limits the US915 join and default uplink channels to one 8-channel
+  sub-band and its 500 kHz channel.
 
 ## [v4.9.0] 2025-10-15
 
