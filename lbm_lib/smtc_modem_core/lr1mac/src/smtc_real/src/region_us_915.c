@@ -64,6 +64,14 @@
 #define snapshot_bank_tx_mask real->region.us915.snapshot_bank_tx_mask
 #define tx_channel_idx real->region.us915.tx_channel_idx
 
+/**
+ * @brief Enable the per-channel TX mask dumps of the join, uplink and post-join channel selection
+ * @details Off by default: each channel bit is a separate trace call, so one dump is about 72 log lines
+ */
+#ifndef MODEM_HAL_DBG_TRACE_CHANNEL_MASK
+#define MODEM_HAL_DBG_TRACE_CHANNEL_MASK MODEM_HAL_FEATURE_OFF
+#endif
+
 /*
  * -----------------------------------------------------------------------------
  * --- PRIVATE CONSTANTS -------------------------------------------------------
@@ -336,7 +344,7 @@ status_lorawan_t region_us_915_get_join_next_channel( smtc_real_t* real, uint8_t
     *out_tx_frequency  = region_us_915_get_tx_frequency_channel( real, channel_idx );
     *out_rx1_frequency = region_us_915_get_rx1_frequency_channel( real, channel_idx );
 
-#if MODEM_HAL_DBG_TRACE == MODEM_HAL_FEATURE_ON
+#if ( MODEM_HAL_DBG_TRACE == MODEM_HAL_FEATURE_ON ) && ( MODEM_HAL_DBG_TRACE_CHANNEL_MASK == MODEM_HAL_FEATURE_ON )
     SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG( "snapshot channel 125 tx mask\n" );
     for( uint8_t i = 0; i < NUMBER_OF_TX_CHANNEL_US_915 - 8; i++ )
     {
@@ -428,7 +436,7 @@ status_lorawan_t region_us_915_get_next_channel( smtc_real_t* real, uint8_t tx_d
     *out_tx_frequency  = region_us_915_get_tx_frequency_channel( real, channel_idx );
     *out_rx1_frequency = region_us_915_get_rx1_frequency_channel( real, channel_idx );
 
-#if MODEM_HAL_DBG_TRACE == MODEM_HAL_FEATURE_ON
+#if ( MODEM_HAL_DBG_TRACE == MODEM_HAL_FEATURE_ON ) && ( MODEM_HAL_DBG_TRACE_CHANNEL_MASK == MODEM_HAL_FEATURE_ON )
     SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG( "snapshot channel 125 tx mask\n" );
     for( uint8_t i = 0; i < NUMBER_OF_TX_CHANNEL_US_915 - 8; i++ )
     {
@@ -774,7 +782,7 @@ static void region_us_915_channel_mask_set_after_join( smtc_real_t* real )
     memcpy( channel_index_enabled, unwrapped_channel_mask, BANK_MAX_US915 );
     memcpy( snapshot_channel_tx_mask, unwrapped_channel_mask, BANK_MAX_US915 );
 
-#if ( BSP_DBG_TRACE == BSP_FEATURE_ON )
+#if ( MODEM_HAL_DBG_TRACE == MODEM_HAL_FEATURE_ON ) && ( MODEM_HAL_DBG_TRACE_CHANNEL_MASK == MODEM_HAL_FEATURE_ON )
     SMTC_MODEM_HAL_TRACE_PRINTF_DEBUG( "Ch 125kHz\n" );
     for( uint8_t i = 0; i < NUMBER_OF_TX_CHANNEL_US_915 - 8; i++ )
     {
